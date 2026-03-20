@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEM · Problema de Poisson · Juego Matemático</title>
+
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters:[
+      {left:'$$',right:'$$',display:true},
+      {left:'$',right:'$',display:false}
+    ],
+    throwOnError:false
+  });"></script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@300;400;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:      #07080f;
+  --bg2:     #0d0f1c;
+  --bg3:     #131628;
+  --ink:     #e9eaf5;
+  --ink2:    #8890b8;
+  --ink3:    #4a5080;
+  --gold:    #f0c060;
+  --teal:    #38e8c8;
+  --violet:  #9b6dff;
+  --coral:   #ff6f6f;
+  --line:    rgba(255,255,255,0.07);
+  --card-bg: rgba(255,255,255,0.025);
+  --r:       6px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events:none;
+}
+
+/* ── FLOATING PARTICLES ── */
+.particle {
+  position: fixed;
+  font-family: 'IBM Plex Mono', monospace;
+  color: rgba(56,232,200,0.06);
+  pointer-events: none;
+  z-index: 0;
+  animation: drift linear infinite;
+  user-select: none;
+}
+@keyframes drift {
+  from { transform: translateY(105vh) rotate(0deg); opacity:0; }
+  5%   { opacity:1; }
+  95%  { opacity:1; }
+  to   { transform: translateY(-5vh) rotate(720deg); opacity:0; }
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  height: 56px;
+  background: rgba(7,8,15,0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .8rem; font-weight:600;
+  color: var(--teal); letter-spacing: .08em;
+  display:flex; align-items:center; gap:10px;
+}
+.nav-brand .dot {
+  width:8px; height:8px; border-radius:50%;
+  background: var(--teal);
+  box-shadow: 0 0 12px var(--teal);
+  animation: blink 2s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.nav-links { display:flex; gap:4px; }
+.nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .68rem; letter-spacing:.06em;
+  padding: 6px 14px; border-radius: 3px;
+  cursor: pointer; transition: all .2s;
+  text-transform: uppercase;
+}
+.nav-btn:hover { color:var(--teal); border-color:rgba(56,232,200,0.3); background:rgba(56,232,200,0.05); }
+.nav-btn.active { color:var(--teal); border-color:rgba(56,232,200,0.5); background:rgba(56,232,200,0.08); }
+
+@media(max-width:760px){
+  nav { padding:0 16px; }
+  .nav-links { gap:2px; }
+  .nav-btn { font-size:.55rem; padding:5px 8px; }
+}
+
+/* ── PAGES ── */
+.page { display:none; min-height:100vh; padding:80px 40px 60px; position:relative; z-index:1; max-width:1100px; margin:0 auto; }
+.page.active { display:block; animation: pageIn .45s cubic-bezier(.22,1,.36,1); }
+@keyframes pageIn { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
+
+@media(max-width:760px){ .page { padding:72px 16px 40px; } }
+
+/* ── SECTION HEADER ── */
+.s-eyebrow {
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:.65rem;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--teal); margin-bottom:14px;
+}
+.s-eyebrow::before { content:''; display:block; width:24px; height:1px; background:var(--teal); }
+.s-title {
+  font-family:'Playfair Display', serif; font-weight:900;
+  font-size:clamp(2rem,4.5vw,3.4rem); line-height:1.08;
+  letter-spacing:-.02em; margin-bottom:16px;
+  background: linear-gradient(130deg, #fff 0%, var(--teal) 60%, var(--violet) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.s-sub { color:var(--ink2); font-size:.9rem; max-width:600px; line-height:1.75; margin-bottom:40px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 28px 32px;
+  position: relative; overflow:hidden;
+  transition: border-color .3s, box-shadow .3s, transform .3s;
+}
+.card:hover {
+  border-color: rgba(56,232,200,0.2);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(56,232,200,0.08);
+  transform: translateY(-2px);
+}
+.card-accent {
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity:0; transition:opacity .3s;
+}
+.card:hover .card-accent { opacity:1; }
+.card-label {
+  font-family:'IBM Plex Mono',monospace; font-size:.6rem;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--teal);
+  margin-bottom:10px; display:block;
+}
+.card h3 {
+  font-family:'Playfair Display',serif; font-size:1.15rem;
+  color:var(--gold); margin-bottom:10px;
+}
+.card p { color:var(--ink2); font-size:.88rem; line-height:1.75; }
+
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+@media(max-width:760px){ .g2,.g3{ grid-template-columns:1fr; } }
+
+/* ── MATH BLOCKS (KaTeX host) ── */
+.math-env {
+  background: rgba(0,0,0,0.45);
+  border-left: 3px solid var(--teal);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 20px 24px;
+  margin: 18px 0;
+  overflow-x: auto;
+}
+.math-env .env-label {
+  font-family:'IBM Plex Mono',monospace; font-size:.58rem;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--violet); margin-bottom:10px; display:block;
+}
+.math-env .katex-display { margin:0; }
+
+.math-inline-env {
+  background:rgba(155,109,255,0.06);
+  border:1px solid rgba(155,109,255,0.25);
+  border-radius:var(--r);
+  padding:16px 20px; margin:14px 0;
+}
+
+/* Theorem / Definition boxes */
+.thm, .defn, .prop, .remark {
+  border-radius: var(--r); padding:18px 22px; margin:16px 0;
+  position:relative;
+}
+.thm {
+  background: rgba(155,109,255,0.06);
+  border: 1px solid rgba(155,109,255,0.3);
+}
+.thm::before { content:'Teorema'; position:absolute; top:-9px; left:16px; padding:0 8px; background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--violet); }
+
+.defn {
+  background:rgba(240,192,96,0.05);
+  border:1px solid rgba(240,192,96,0.25);
+}
+.defn::before { content:'Definición'; position:absolute; top:-9px; left:16px; padding:0 8px; background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
+
+.prop {
+  background:rgba(56,232,200,0.04);
+  border:1px solid rgba(56,232,200,0.2);
+}
+.prop::before { content:'Proposición'; position:absolute; top:-9px; left:16px; padding:0 8px; background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); }
+
+.remark {
+  background:rgba(255,111,111,0.04);
+  border:1px solid rgba(255,111,111,0.2);
+}
+.remark::before { content:'Observación'; position:absolute; top:-9px; left:16px; padding:0 8px; background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--coral); }
+
+.thm p, .defn p, .prop p, .remark p { color:var(--ink2); font-size:.88rem; line-height:1.8; }
+
+/* ── TABS ── */
+.tabs { display:flex; gap:6px; margin-bottom:24px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:0; }
+.tab-btn {
+  background:transparent; border:none; border-bottom:2px solid transparent;
+  color:var(--ink3); font-family:'IBM Plex Mono',monospace; font-size:.68rem;
+  letter-spacing:.06em; text-transform:uppercase;
+  padding:10px 16px 12px; cursor:pointer; transition:all .2s;
+  margin-bottom:-1px;
+}
+.tab-btn:hover { color:var(--teal); }
+.tab-btn.active { color:var(--teal); border-bottom-color:var(--teal); }
+.tab-panel { display:none; animation:pageIn .3s; }
+.tab-panel.active { display:block; }
+
+/* ── STEPS ── */
+.step-row {
+  display:flex; gap:16px; align-items:flex-start;
+  padding:20px; margin-bottom:12px;
+  background:var(--card-bg); border:1px solid var(--line); border-radius:var(--r);
+  transition: border-color .25s;
+}
+.step-row:hover { border-color:rgba(155,109,255,0.3); }
+.step-n {
+  min-width:36px; height:36px; border-radius:4px;
+  background:linear-gradient(135deg,var(--violet),#5520cc);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:.8rem; color:#fff;
+  flex-shrink:0;
+}
+.step-row h4 { font-family:'Playfair Display',serif; color:var(--teal); font-size:.95rem; margin-bottom:4px; }
+.step-row p  { font-size:.82rem; color:var(--ink2); line-height:1.7; }
+
+/* ── CHIPS ── */
+.chip {
+  display:inline-block; padding:2px 10px; border-radius:20px;
+  font-family:'IBM Plex Mono',monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase;
+  background:rgba(56,232,200,0.08); color:var(--teal); border:1px solid rgba(56,232,200,0.25);
+  margin:3px 2px;
+}
+
+/* ── BUTTONS ── */
+.btn-p {
+  display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(135deg,var(--teal),var(--violet));
+  color:#050810; font-family:'DM Sans',sans-serif; font-weight:700; font-size:.85rem;
+  padding:12px 28px; border:none; border-radius:4px; cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+}
+.btn-p:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(56,232,200,0.35); }
+
+.btn-s {
+  display:inline-flex; align-items:center; gap:8px;
+  background:transparent; color:var(--teal);
+  font-family:'IBM Plex Mono',monospace; font-size:.75rem; letter-spacing:.05em;
+  padding:12px 24px; border:1px solid rgba(56,232,200,0.4); border-radius:4px;
+  cursor:pointer; transition:all .2s;
+}
+.btn-s:hover { background:rgba(56,232,200,0.08); }
+
+/* ── APPLICATION CARDS ── */
+.app-card {
+  background:var(--card-bg); border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden; transition:all .3s; cursor:default;
+}
+.app-card:hover { border-color:rgba(240,192,96,0.3); transform:translateY(-4px); box-shadow:0 16px 48px rgba(0,0,0,0.5); }
+.app-thumb {
+  height:120px; display:flex; align-items:center; justify-content:center;
+  font-size:2.8rem; position:relative; overflow:hidden;
+}
+.app-body { padding:18px 20px; }
+.app-body h3 { font-family:'Playfair Display',serif; font-size:1rem; color:var(--gold); margin-bottom:6px; }
+.app-body p  { font-size:.8rem; color:var(--ink2); line-height:1.7; }
+.app-body .math-sm { font-size:.78rem; color:var(--ink2); }
+
+/* ── ANIMATION SCENE ── */
+#anim-wrap {
+  background: #050810; border:1px solid rgba(56,232,200,0.15);
+  border-radius:10px; overflow:hidden; position:relative;
+  min-height:460px;
+}
+.anim-topbar {
+  display:flex; align-items:center; gap:8px; padding:10px 16px;
+  background:rgba(0,0,0,0.5); border-bottom:1px solid var(--line);
+}
+.anim-dot-r { width:10px;height:10px;border-radius:50%;background:#ff5f57; }
+.anim-dot-y { width:10px;height:10px;border-radius:50%;background:#febc2e; }
+.anim-dot-g { width:10px;height:10px;border-radius:50%;background:#28c840; }
+.anim-title-bar { font-family:'IBM Plex Mono',monospace; font-size:.68rem; color:var(--ink3); margin-left:8px; }
+
+.anim-body {
+  padding: 32px 40px; min-height:380px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+
+.anim-slide { display:none; width:100%; animation:slideIn .5s cubic-bezier(.34,1.56,.64,1); text-align:center; }
+.anim-slide.active { display:flex; flex-direction:column; align-items:center; }
+@keyframes slideIn { from{opacity:0;transform:scale(.92) translateY(20px)} to{opacity:1;transform:none} }
+
+.anim-emoji { font-size:3.2rem; margin-bottom:12px; line-height:1.1; }
+.anim-heading {
+  font-family:'Playfair Display',serif; font-weight:700; font-size:1.4rem;
+  color:var(--teal); margin-bottom:10px;
+}
+.anim-text { font-size:.85rem; color:var(--ink2); max-width:520px; line-height:1.8; margin-bottom:14px; }
+.anim-math-block {
+  background:rgba(0,0,0,0.55); border:1px solid rgba(56,232,200,0.2);
+  border-radius:var(--r); padding:16px 24px; margin-top:12px;
+  font-size:.92rem; max-width:560px; width:100%; text-align:left;
+}
+
+/* Progress dots */
+.prog-dots { display:flex; gap:8px; padding:16px; justify-content:center; }
+.prog-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--ink3); transition:all .3s;
+}
+.prog-dot.done { background:var(--teal); box-shadow:0 0 6px var(--teal); }
+.prog-dot.cur  { background:var(--gold); transform:scale(1.4); }
+
+/* ── FREEFEM MONITOR ── */
+.monitor-wrap { display:flex; flex-direction:column; align-items:center; }
+.monitor-frame {
+  width:220px; background:#111827; border:2.5px solid #374151;
+  border-radius:8px 8px 4px 4px; padding:12px;
+  box-shadow:0 0 40px rgba(155,109,255,0.5), 0 0 80px rgba(56,232,200,0.15);
+  animation:monGlow 1.8s ease-in-out infinite alternate;
+}
+@keyframes monGlow {
+  from { box-shadow:0 0 20px rgba(155,109,255,0.3); }
+  to   { box-shadow:0 0 60px rgba(155,109,255,0.7), 0 0 120px rgba(56,232,200,0.2); }
+}
+.monitor-screen {
+  background:#000811; border-radius:4px; padding:10px;
+  min-height:130px; overflow:hidden;
+  font-family:'IBM Plex Mono',monospace; font-size:.52rem; line-height:1.7;
+}
+.ffem-logo {
+  color:#9b6dff; font-weight:600; font-size:.65rem;
+  text-shadow:0 0 8px #9b6dff; display:block; margin-bottom:4px;
+}
+.monitor-neck { width:28px; height:20px; background:#374151; margin:0 auto; }
+.monitor-base { width:70px; height:7px; background:#4b5563; border-radius:3px; margin:0 auto; }
+
+/* ── FREEFEM THROW ── */
+.throw-scene {
+  position:relative; width:340px; height:80px; margin:8px auto;
+}
+.paper {
+  position:absolute; font-size:1.8rem;
+  animation:throwPaper 1.4s cubic-bezier(.25,.46,.45,.94) forwards;
+}
+@keyframes throwPaper {
+  0%   { left:5%;  top:30%; opacity:1; transform:scale(1)    rotate(0deg); }
+  40%  {            top:0%;            transform:scale(.85)  rotate(200deg); }
+  100% { left:62%; top:35%; opacity:0; transform:scale(.2)   rotate(450deg); }
+}
+
+/* ── CANVAS GRAPHS ── */
+.graph-wrap {
+  background:#040710; border:1px solid rgba(56,232,200,0.12);
+  border-radius:var(--r); padding:20px; position:relative;
+}
+.graph-title {
+  font-family:'IBM Plex Mono',monospace; font-size:.68rem;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--teal);
+  margin-bottom:12px;
+}
+canvas { display:block; width:100%; border-radius:3px; }
+.colorbar-wrap { position:absolute; right:28px; top:44px; }
+.cbar {
+  width:14px; height:140px; border-radius:3px;
+  background:linear-gradient(to bottom,#ff2020,#ff8800,#ffe000,#38e8c8,#2040ff,#8800ff);
+}
+.cbar-ticks {
+  position:absolute; left:20px; top:0; height:140px;
+  display:flex; flex-direction:column; justify-content:space-between;
+}
+.cbar-ticks span { font-family:'IBM Plex Mono',monospace; font-size:.55rem; color:var(--ink3); }
+
+/* ── CODE BLOCK ── */
+.code-wrap {
+  background:#020408; border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden; margin:16px 0; position:relative;
+}
+.code-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 16px; background:rgba(255,255,255,0.03); border-bottom:1px solid var(--line);
+}
+.code-lang { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--violet); letter-spacing:.1em; }
+.code-copy-btn {
+  background:rgba(56,232,200,0.08); border:1px solid rgba(56,232,200,0.25);
+  color:var(--teal); font-family:'IBM Plex Mono',monospace; font-size:.6rem;
+  padding:3px 10px; border-radius:3px; cursor:pointer; transition:all .2s;
+}
+.code-copy-btn:hover { background:rgba(56,232,200,0.18); }
+pre.code-body {
+  padding:18px 20px; overflow-x:auto;
+  font-family:'IBM Plex Mono',monospace; font-size:.76rem; line-height:1.9;
+  color:#c9d1d9;
+}
+.kw  { color:#ff79c6; } /* keyword */
+.fn  { color:#50fa7b; } /* function */
+.str { color:#f1fa8c; } /* string */
+.num { color:var(--gold); } /* number */
+.cm  { color:#6272a4; font-style:italic; } /* comment */
+.ty  { color:#8be9fd; } /* type */
+.op  { color:var(--teal); } /* operator */
+
+/* ── QUIZ ── */
+.q-card {
+  background:var(--card-bg); border:1px solid var(--line); border-radius:var(--r);
+  padding:24px 28px; margin-bottom:18px;
+}
+.q-num { font-family:'IBM Plex Mono',monospace; font-size:.62rem; color:var(--violet); letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px; }
+.q-text { font-size:.95rem; color:var(--ink); margin-bottom:18px; font-family:'DM Sans',sans-serif; }
+.q-opts { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media(max-width:580px){ .q-opts { grid-template-columns:1fr; } }
+.q-opt {
+  background:transparent; border:1px solid var(--line);
+  color:var(--ink2); font-family:'DM Sans',sans-serif; font-size:.83rem;
+  padding:11px 14px; border-radius:4px; cursor:pointer; text-align:left;
+  transition:all .2s; line-height:1.4;
+}
+.q-opt:hover:not(:disabled) { border-color:rgba(56,232,200,0.4); color:var(--teal); background:rgba(56,232,200,0.05); }
+.q-opt.correct { background:rgba(56,232,200,0.1); border-color:var(--teal); color:var(--teal); }
+.q-opt.wrong   { background:rgba(255,111,111,0.08); border-color:var(--coral); color:var(--coral); }
+.q-feedback {
+  display:none; margin-top:12px; padding:12px 16px;
+  border-radius:4px; font-size:.82rem; line-height:1.65;
+}
+.q-feedback.show { display:block; }
+.q-feedback.ok   { background:rgba(56,232,200,0.07); border:1px solid rgba(56,232,200,0.2); color:var(--teal); }
+.q-feedback.no   { background:rgba(255,111,111,0.07); border:1px solid rgba(255,111,111,0.2); color:var(--coral); }
+
+.scorebar { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+.score-n  { font-family:'Playfair Display',serif; font-weight:900; font-size:2.2rem; color:var(--gold); }
+.score-lbl{ font-family:'IBM Plex Mono',monospace; font-size:.68rem; color:var(--ink3); letter-spacing:.08em; text-transform:uppercase; }
+
+/* ── RESULT SCREEN ── */
+#quiz-result { display:none; text-align:center; padding:40px 20px; }
+#quiz-result .big-emoji { font-size:4rem; display:block; margin-bottom:16px; }
+#quiz-result h2 { font-family:'Playfair Display',serif; font-size:2rem; color:var(--teal); margin-bottom:10px; }
+#quiz-result p  { color:var(--ink2); font-size:.9rem; max-width:440px; margin:0 auto 28px; }
+
+/* ── HERO ── */
+#hero { display:flex; flex-direction:column; justify-content:center; min-height:100vh; padding-top:0; }
+#hero.active { display:flex; }
+
+.hero-kicker {
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:'IBM Plex Mono',monospace; font-size:.7rem; letter-spacing:.12em;
+  color:var(--teal); text-transform:uppercase; margin-bottom:20px;
+}
+.hero-kicker::before { content:''; width:32px; height:1px; background:var(--teal); }
+.hero-kicker::after  { content:''; width:32px; height:1px; background:var(--teal); }
+
+h1.hero-h {
+  font-family:'Playfair Display',serif; font-weight:900;
+  font-size:clamp(2.8rem,6.5vw,5.5rem); line-height:1.02;
+  letter-spacing:-.03em; margin-bottom:12px;
+}
+h1.hero-h em { font-style:italic; color:var(--gold); }
+h1.hero-h span {
+  background:linear-gradient(130deg,var(--teal),var(--violet));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+
+.hero-eq {
+  display:inline-flex; align-items:center;
+  background:rgba(0,0,0,0.5); border:1px solid rgba(56,232,200,0.2);
+  border-radius:6px; padding:12px 22px; margin:20px 0 28px;
+  font-size:1.05rem;
+}
+
+.hero-meta { display:flex; gap:40px; flex-wrap:wrap; margin-top:40px; }
+.hero-stat-n { font-family:'Playfair Display',serif; font-weight:900; font-size:2rem; }
+.hero-stat-l { font-family:'IBM Plex Mono',monospace; font-size:.62rem; color:var(--ink2); letter-spacing:.1em; text-transform:uppercase; margin-top:2px; }
+
+/* KaTeX override for dark theme */
+.katex { color: var(--ink) !important; }
+.katex .mord, .katex .mbin, .katex .mrel { color: var(--ink) !important; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:rgba(56,232,200,0.25); border-radius:3px; }
+
+/* ── SECTION: NEUMANN / STOKES ── */
+.comparison-table {
+  width:100%; border-collapse:collapse; margin:16px 0;
+  font-size:.83rem;
+}
+.comparison-table th {
+  font-family:'IBM Plex Mono',monospace; font-size:.65rem;
+  letter-spacing:.08em; text-transform:uppercase; padding:12px 16px;
+  background:rgba(255,255,255,0.04); color:var(--teal);
+  border-bottom:1px solid var(--line); text-align:left;
+}
+.comparison-table td {
+  padding:12px 16px; color:var(--ink2); border-bottom:1px solid rgba(255,255,255,0.04);
+  vertical-align:top;
+}
+.comparison-table tr:hover td { background:rgba(255,255,255,0.02); }
+
+/* Nav active flash */
+@keyframes navFlash { from{background:rgba(56,232,200,0.2)} to{background:rgba(56,232,200,0.08)} }
+</style>
+</head>
+<body>
+
+<!-- ─── FLOATING PARTICLES ──────────────────────────────── -->
+<script>
+const sym=['\\nabla','\\Delta','\\partial','\\int','\\Omega','H_0^1','\\phi','\\psi','\\lambda','\\in','\\forall','\\exists','\\mathcal{L}','\\mathbb{R}'];
+for(let i=0;i<22;i++){
+  const el=document.createElement('div');
+  el.className='particle';
+  el.textContent=sym[i%sym.length];
+  el.style.cssText=`left:${Math.random()*100}vw;font-size:${.7+Math.random()*1.1}rem;animation-duration:${14+Math.random()*22}s;animation-delay:${-Math.random()*30}s;`;
+  document.body.appendChild(el);
+}
+</script>
+
+<!-- ─── NAV ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-brand"><div class="dot"></div>FEM · Poisson</div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="go('hero')">Inicio</button>
+    <button class="nav-btn" onclick="go('p1')">FEM</button>
+    <button class="nav-btn" onclick="go('p2')">Aplicaciones</button>
+    <button class="nav-btn" onclick="go('p3')">Extensiones</button>
+    <button class="nav-btn" onclick="go('p4')">Animación</button>
+    <button class="nav-btn" onclick="go('p5')">Gráficas</button>
+    <button class="nav-btn" onclick="go('p6')">Quiz</button>
+    <button class="nav-btn" onclick="go('p7')">Refinamiento</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════ -->
+<section id="hero" class="page active">
+  <div class="hero-kicker">Juego Matemático Interactivo</div>
+  <h1 class="hero-h"><em>Método de</em><br><span>Elementos Finitos</span></h1>
+
+  <div class="hero-eq">
+    $$-\Delta u = f \quad \text{en } \Omega, \qquad u = 0 \quad \text{en } \partial\Omega$$
+  </div>
+
+  <p style="color:var(--ink2);max-width:540px;font-size:.92rem;line-height:1.8;">
+    Desde la formulación fuerte hasta <strong style="color:var(--teal)">FreeFEM++</strong>,
+    pasando por espacios de Sobolev, el Lema de Lax-Milgram, el esquema de Galerkin
+    y extensiones a <strong style="color:var(--gold)">Neumann</strong>,
+    <strong style="color:var(--violet)">condiciones mixtas</strong> y
+    <strong style="color:var(--coral)">Stokes</strong>.
+  </p>
+
+  <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;">
+    <button class="btn-p" onclick="go('p1')">Comenzar →</button>
+    <button class="btn-s" onclick="go('p4')">▶ Ver Animación</button>
+  </div>
+
+  <div class="hero-meta">
+    <div><div class="hero-stat-n" style="color:var(--teal)">6</div><div class="hero-stat-l">Secciones</div></div>
+    <div><div class="hero-stat-n" style="color:var(--gold)">$H_0^1$</div><div class="hero-stat-l">Espacio base</div></div>
+    <div><div class="hero-stat-n" style="color:var(--violet)">$\mathcal{O}(h)$</div><div class="hero-stat-l">Convergencia P1</div></div>
+    <div><div class="hero-stat-n" style="color:var(--coral)">KaTeX</div><div class="hero-stat-l">Matemática real</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 1 — FEM + POISSON
+═══════════════════════════════════════════════════════ -->
+<section id="p1" class="page">
+  <div class="s-eyebrow">Parte I</div>
+  <h2 class="s-title">FEM & Problema de Poisson</h2>
+  <p class="s-sub">El escenario modelo del análisis numérico: un dominio, una EDP elíptica, una condición de contorno y una maquinaria variacional elegante.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="tab('t1','a')">Formulación fuerte</button>
+    <button class="tab-btn" onclick="tab('t1','b')">Formulación débil</button>
+    <button class="tab-btn" onclick="tab('t1','c')">Lax-Milgram</button>
+    <button class="tab-btn" onclick="tab('t1','d')">Discretización Galerkin</button>
+    <button class="tab-btn" onclick="tab('t1','e')">Sistema lineal</button>
+  </div>
+
+  <!-- TAB A -->
+  <div class="tab-panel active" id="t1a">
+    <div class="g2">
+      <div>
+        <div class="card"><div class="card-accent"></div>
+          <span class="card-label">Problema modelo</span>
+          <p>Dado $\Omega \subset \mathbb{R}^n$ abierto acotado con frontera $\partial\Omega$ Lipschitz, y $f \in L^2(\Omega)$, buscamos $u: \Omega \to \mathbb{R}$ tal que:</p>
+          <div class="math-env">
+            <span class="env-label">Problema de Poisson — Forma Fuerte</span>
+            $$-\Delta u = f \quad \text{en } \Omega$$
+            $$u = 0 \quad \text{en } \partial\Omega$$
+          </div>
+          <p style="font-size:.83rem;color:var(--ink2);">donde $\Delta u = \nabla \cdot (\nabla u) = \sum_{i=1}^n \partial_{x_i}^2 u$ es el operador de Laplace. La condición $u=0$ en $\partial\Omega$ se llama <strong style="color:var(--gold)">condición de Dirichlet homogénea</strong>.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card"><div class="card-accent"></div>
+          <span class="card-label">¿Qué es el MEF?</span>
+          <div class="step-row">
+            <div class="step-n">1</div>
+            <div><h4>Triangulación del dominio</h4><p>Se divide $\Omega$ en elementos simples (triángulos en 2D, tetraedros en 3D) formando la malla $\mathcal{T}_h$, con parámetro de malla $h = \max_K \text{diam}(K)$.</p></div>
+          </div>
+          <div class="step-row">
+            <div class="step-n" style="background:linear-gradient(135deg,var(--teal),#007755)">2</div>
+            <div><h4>Funciones de base locales</h4><p>Polinomios $\varphi_i$ de soporte compacto ($\text{supp}(\varphi_i) \subset$ estrella del nodo $i$). Para P1: $\varphi_i(x_j) = \delta_{ij}$.</p></div>
+          </div>
+          <div class="step-row">
+            <div class="step-n" style="background:linear-gradient(135deg,var(--coral),#aa2200)">3</div>
+            <div><h4>Ensamblaje y resolución</h4><p>Se construye el sistema global $\mathbf{K}\mathbf{U} = \mathbf{F}$ y se resuelve con factorización de Cholesky o métodos iterativos (CG, GMRES).</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB B -->
+  <div class="tab-panel" id="t1b">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">De la forma fuerte a la forma débil</span>
+      <p style="font-size:.88rem;color:var(--ink2);margin-bottom:12px;">Multiplicamos la EDP por una <strong style="color:var(--teal)">función test</strong> $v \in V = H_0^1(\Omega)$ e integramos sobre $\Omega$:</p>
+      <div class="math-env"><span class="env-label">Paso 1 — Multiplicar e integrar</span>
+        $$\int_\Omega (-\Delta u)\, v\, dx = \int_\Omega f\, v\, dx$$
+      </div>
+      <div class="math-env"><span class="env-label">Paso 2 — Integración por partes (identidad de Green)</span>
+        $$\int_\Omega \nabla u \cdot \nabla v\, dx \underbrace{- \int_{\partial\Omega} \frac{\partial u}{\partial n}\, v\, d\sigma}_{=0 \text{ pues } v|_{\partial\Omega}=0} = \int_\Omega f\, v\, dx$$
+      </div>
+      <div class="math-env" style="border-color:var(--violet)"><span class="env-label" style="color:var(--teal)">Formulación débil — Forma compacta</span>
+        $$\text{Hallar } u \in V = H_0^1(\Omega) \text{ tal que:}$$
+        $$a(u,v) = \ell(v) \qquad \forall\, v \in V$$
+        $$\text{donde} \quad a(u,v) = \int_\Omega \nabla u \cdot \nabla v\, dx, \quad \ell(v) = \int_\Omega f\, v\, dx$$
+      </div>
+      <div class="defn">
+        <p>El <strong style="color:var(--gold)">espacio de Sobolev</strong> $H_0^1(\Omega)$ se define como:
+        $$H_0^1(\Omega) = \left\{ v \in L^2(\Omega)\;:\; \nabla v \in [L^2(\Omega)]^n,\; v|_{\partial\Omega} = 0 \right\}$$
+        dotado del producto interno $\langle u,v\rangle_{H^1} = \int_\Omega \nabla u \cdot \nabla v\, dx$ (equivalente por Poincaré).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB C -->
+  <div class="tab-panel" id="t1c">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Existencia y unicidad continua</span>
+      <div class="g2">
+        <div>
+          <div class="prop">
+            <p><strong style="color:var(--teal)">Continuidad de $a$:</strong> Existe $M > 0$ tal que
+            $$|a(u,v)| \leq M\, \|u\|_{H^1}\, \|v\|_{H^1} \quad \forall\, u,v \in V$$
+            (directa por Cauchy-Schwarz).</p>
+          </div>
+          <div class="prop">
+            <p><strong style="color:var(--teal)">Coercividad de $a$:</strong> Por la desigualdad de Poincaré $\|v\|_{L^2} \leq C_\Omega \|\nabla v\|_{L^2}$, existe $\alpha > 0$ tal que
+            $$a(v,v) = \|\nabla v\|_{L^2}^2 \geq \alpha\, \|v\|_{H^1}^2 \quad \forall\, v \in V$$</p>
+          </div>
+        </div>
+        <div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Lax-Milgram:</strong> Sea $V$ un espacio de Hilbert, $a:V\times V\to\mathbb{R}$ bilineal continua y coerciva, y $\ell \in V'$ lineal continua. Entonces existe un <strong>único</strong> $u \in V$ tal que
+            $$a(u,v) = \ell(v) \quad \forall\, v \in V$$
+            y además $\|u\|_V \leq \frac{1}{\alpha}\|\ell\|_{V'}$.</p>
+          </div>
+          <div class="remark">
+            <p>Para el problema de Poisson: $V = H_0^1(\Omega)$ es Hilbert ✓, $a$ continua ($M=1$) ✓, $a$ coerciva ✓, $\ell(v) = (f,v)_{L^2}$ continua ✓. Por tanto $\exists!\, u \in H_0^1(\Omega)$. $\square$</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB D -->
+  <div class="tab-panel" id="t1d">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Esquema de Galerkin — Nivel discreto</span>
+      <div class="g2">
+        <div>
+          <div class="defn">
+            <p><strong style="color:var(--gold)">Espacio discreto P1:</strong>
+            $$V_h = \left\{ v_h \in C^0(\bar\Omega)\;:\; v_h|_K \in \mathbb{P}_1(K)\;\forall K \in \mathcal{T}_h,\; v_h|_{\partial\Omega}=0 \right\}$$
+            con $\dim(V_h) = N_h$ (número de nodos interiores). Se tiene $V_h \subset H_0^1(\Omega)$.</p>
+          </div>
+          <div class="math-env"><span class="env-label">Problema discreto (Galerkin)</span>
+            $$\text{Hallar } u_h \in V_h \text{ tal que:}$$
+            $$a(u_h, v_h) = \ell(v_h) \quad \forall\, v_h \in V_h$$
+          </div>
+        </div>
+        <div>
+          <div class="math-env"><span class="env-label">Representación en base $\{\varphi_i\}$</span>
+            $$u_h = \sum_{j=1}^{N_h} U_j\, \varphi_j$$
+            $$\sum_{j=1}^{N_h} U_j\, a(\varphi_j, \varphi_i) = \ell(\varphi_i) \quad \forall\, i$$
+            $$\Longrightarrow \quad \mathbf{K}\,\mathbf{U} = \mathbf{F}$$
+          </div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Existencia y unicidad discreta (inmediata):</strong> $V_h \subset H_0^1(\Omega)$ es subespacio cerrado de Hilbert, hereda continuidad y coercividad de $a$. Lax-Milgram aplica en $V_h$ directamente. $\mathbf{K}$ es SPD. $\square$</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB E -->
+  <div class="tab-panel" id="t1e">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Sistema lineal, ensamblaje y convergencia</span>
+      <div class="g2">
+        <div>
+          <div class="math-env"><span class="env-label">Entradas del sistema</span>
+            $$K_{ij} = \int_\Omega \nabla\varphi_i \cdot \nabla\varphi_j\, dx \quad \text{(rigidez)}$$
+            $$F_i = \int_\Omega f\,\varphi_i\, dx \quad \text{(carga)}$$
+            $$\mathbf{K} \text{ es dispersa, simétrica, definida positiva}$$
+          </div>
+          <div class="remark">
+            <p>La matriz $\mathbf{K}$ tiene $\mathcal{O}(N_h)$ entradas no nulas (soporte local de $\varphi_i$). Se ensambla elemento por elemento:
+            $$K_{ij} = \sum_{K \in \mathcal{T}_h} \int_K \nabla\varphi_i \cdot \nabla\varphi_j\, dx$$</p>
+          </div>
+        </div>
+        <div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Estimación de Céa:</strong>
+            $$\|u - u_h\|_{H^1} \leq \frac{M}{\alpha}\, \inf_{v_h \in V_h} \|u - v_h\|_{H^1}$$
+            $u_h$ es la <em>mejor aproximación</em> en $V_h$, salvo constante $M/\alpha$.</p>
+          </div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Convergencia P1 (Aubin-Nitsche):</strong>
+            $$\|u - u_h\|_{H^1(\Omega)} \leq C\, h\, |u|_{H^2(\Omega)}$$
+            $$\|u - u_h\|_{L^2(\Omega)} \leq C\, h^2\, |u|_{H^2(\Omega)}$$</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;"><button class="btn-p" onclick="go('p2')">Aplicaciones →</button></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 2 — APLICACIONES
+═══════════════════════════════════════════════════════ -->
+<section id="p2" class="page">
+  <div class="s-eyebrow">Parte II</div>
+  <h2 class="s-title">Aplicaciones del Problema de Poisson</h2>
+  <p class="s-sub">La ecuación $-\Delta u = f$ gobierna fenómenos aparentemente dispares. Una sola maquinaria matemática; infinitas aplicaciones.</p>
+
+  <div class="g3">
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#1a0025,#5b006b)"><canvas id="cv-heat" width="200" height="120" style="position:absolute;inset:0;width:100%;height:100%;"></canvas><span style="position:relative;z-index:1">🌡️</span></div>
+      <div class="app-body">
+        <h3>Conducción de calor</h3>
+        <p class="math-sm">$-\kappa\,\Delta T = Q$ en $\Omega$, $T=T_0$ en $\partial\Omega$</p>
+        <p>$u=T$ temperatura, $f=Q/\kappa$ fuente de calor normalizada. Estado estacionario en una placa.</p>
+        <div style="margin-top:10px"><span class="chip">Termodinámica</span><span class="chip">Ingeniería</span></div>
+      </div>
+    </div>
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#00101a,#003366)"><canvas id="cv-elec" width="200" height="120" style="position:absolute;inset:0;width:100%;height:100%;"></canvas><span style="position:relative;z-index:1">⚡</span></div>
+      <div class="app-body">
+        <h3>Electrostática</h3>
+        <p class="math-sm">$-\Delta V = \rho/\varepsilon_0$ (ley de Gauss)</p>
+        <p>$u=V$ potencial eléctrico, $f=\rho/\varepsilon_0$ densidad de carga libre. Condensadores, dispositivos electrónicos.</p>
+        <div style="margin-top:10px"><span class="chip">Maxwell</span><span class="chip">Electrónica</span></div>
+      </div>
+    </div>
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#001a0a,#004422)"><canvas id="cv-mech" width="200" height="120" style="position:absolute;inset:0;width:100%;height:100%;"></canvas><span style="position:relative;z-index:1">🔩</span></div>
+      <div class="app-body">
+        <h3>Deflexión de membrana</h3>
+        <p class="math-sm">$-T\,\Delta w = p$ en $\Omega$, $w=0$ en $\partial\Omega$</p>
+        <p>$u=w$ desplazamiento vertical, $T$ tensión superficial, $p$ presión aplicada. Tambor, membrana de micrófono.</p>
+        <div style="margin-top:10px"><span class="chip">Mecánica</span><span class="chip">Estructuras</span></div>
+      </div>
+    </div>
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#1a1000,#503000)"><span style="font-size:2.8rem">💧</span></div>
+      <div class="app-body">
+        <h3>Flujo potencial</h3>
+        <p class="math-sm">$-\Delta\phi = S$ (fuentes), $\Delta\phi=0$ (Laplace)</p>
+        <p>$u=\phi$ potencial de velocidad. Flujo irrotacional alrededor de obstáculos, filtraciones en suelos (Darcy).</p>
+        <div style="margin-top:10px"><span class="chip">CFD</span><span class="chip">Hidráulica</span></div>
+      </div>
+    </div>
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#100015,#400040)"><span style="font-size:2.8rem">🧲</span></div>
+      <div class="app-body">
+        <h3>Magnetostática 2D</h3>
+        <p class="math-sm">$-\Delta A_z = \mu_0 J_z$</p>
+        <p>Potencial vector magnético en problemas planos. Diseño de motores, transformadores, imanes superconductores.</p>
+        <div style="margin-top:10px"><span class="chip">Electromagnetismo</span><span class="chip">Motores</span></div>
+      </div>
+    </div>
+    <div class="app-card">
+      <div class="app-thumb" style="background:linear-gradient(135deg,#001515,#004040)"><span style="font-size:2.8rem">🧪</span></div>
+      <div class="app-body">
+        <h3>Difusión-reacción</h3>
+        <p class="math-sm">$-D\,\Delta c + \sigma c = R$ (Helmholtz)</p>
+        <p>Concentración de especie química en estado estacionario. Reactores químicos, transporte de contaminantes, farmacología.</p>
+        <div style="margin-top:10px"><span class="chip">Química</span><span class="chip">Biología</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;"><button class="btn-p" onclick="go('p3')">Extensiones →</button></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 3 — EXTENSIONES
+═══════════════════════════════════════════════════════ -->
+<section id="p3" class="page">
+  <div class="s-eyebrow">Parte III</div>
+  <h2 class="s-title">Extensiones del Problema Modelo</h2>
+  <p class="s-sub">Más allá de Dirichlet homogéneo: condiciones de Neumann, mixtas, el operador de difusión general y el problema de Stokes.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="tab('t3','a')">Condición de Neumann</button>
+    <button class="tab-btn" onclick="tab('t3','b')">Condición mixta (Robin)</button>
+    <button class="tab-btn" onclick="tab('t3','c')">Difusión variable</button>
+    <button class="tab-btn" onclick="tab('t3','d')">Problema de Stokes</button>
+  </div>
+
+  <div class="tab-panel active" id="t3a">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Condición de Neumann</span>
+      <div class="g2">
+        <div>
+          <div class="math-env"><span class="env-label">Formulación fuerte</span>
+            $$-\Delta u = f \quad \text{en } \Omega$$
+            $$\frac{\partial u}{\partial n} = g \quad \text{en } \partial\Omega$$
+          </div>
+          <p style="font-size:.85rem;color:var(--ink2);">donde $\partial u/\partial n = \nabla u \cdot \mathbf{n}$ es la derivada normal exterior. Modela flujo prescrito en la frontera (flujo de calor, corriente eléctrica).</p>
+          <div class="remark">
+            <p><strong style="color:var(--coral)">Condición de compatibilidad:</strong> Para existencia es necesario:
+            $$\int_\Omega f\, dx + \int_{\partial\Omega} g\, d\sigma = 0$$
+            (balance global de flujo).</p>
+          </div>
+        </div>
+        <div>
+          <div class="math-env"><span class="env-label">Formulación débil — Neumann natural</span>
+            $$\text{Hallar } u \in H^1(\Omega)/\mathbb{R} \text{ t.q.:}$$
+            $$\int_\Omega \nabla u \cdot \nabla v\, dx = \int_\Omega f\, v\, dx + \int_{\partial\Omega} g\, v\, d\sigma \quad \forall v$$
+          </div>
+          <div class="thm">
+            <p>La condición de Neumann es <strong style="color:var(--violet)">natural</strong>: surge automáticamente de la integración por partes, <em>sin</em> imponerse sobre el espacio de funciones test. El término de borde $\int_{\partial\Omega} g\, v\, d\sigma$ aparece directamente en $\ell(v)$.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="t3b">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Condición mixta — Robin</span>
+      <div class="math-env"><span class="env-label">Formulación fuerte</span>
+        $$-\Delta u = f \quad \text{en } \Omega, \qquad \alpha u + \beta\frac{\partial u}{\partial n} = g \quad \text{en } \partial\Omega \quad (\alpha,\beta \geq 0,\; \alpha+\beta>0)$$
+      </div>
+      <div class="g2">
+        <div>
+          <div class="math-env"><span class="env-label">Formulación débil</span>
+            $$a(u,v) = \int_\Omega \nabla u \cdot \nabla v\, dx + \frac{\alpha}{\beta}\int_{\partial\Omega} u\, v\, d\sigma$$
+            $$\ell(v) = \int_\Omega f\,v\, dx + \frac{1}{\beta}\int_{\partial\Omega} g\, v\, d\sigma$$
+          </div>
+        </div>
+        <div>
+          <div class="thm">
+            <p>Con $\alpha > 0$: el término de borde $\int_{\partial\Omega} u\,v$ aporta coercividad adicional. Lax-Milgram aplica en $V = H^1(\Omega)$ (sin restricción en la frontera). Ejemplos: convección-difusión, Newton cooling.</p>
+          </div>
+        </div>
+      </div>
+      <table class="comparison-table">
+        <tr><th>Tipo</th><th>Condición</th><th>Espacio V</th><th>Término en $\ell(v)$</th></tr>
+        <tr><td>Dirichlet hom.</td><td>$u=0$ en $\partial\Omega$</td><td>$H_0^1(\Omega)$</td><td>$\int_\Omega fv\,dx$</td></tr>
+        <tr><td>Neumann</td><td>$\partial_n u = g$</td><td>$H^1(\Omega)/\mathbb{R}$</td><td>$\int fv + \int_{\partial\Omega} gv$</td></tr>
+        <tr><td>Robin</td><td>$\alpha u + \beta\partial_n u = g$</td><td>$H^1(\Omega)$</td><td>$\int fv + \int_{\partial\Omega} \tfrac{g}{\beta}v$, + $\tfrac{\alpha}{\beta}\int_{\partial\Omega}uv$ en $a$</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="t3c">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Difusión variable — operador general</span>
+      <div class="g2">
+        <div>
+          <div class="math-env"><span class="env-label">EDP de difusión general</span>
+            $$-\nabla \cdot \bigl(\mathbf{A}(x)\,\nabla u\bigr) + \mathbf{b}(x)\cdot\nabla u + c(x)\,u = f$$
+          </div>
+          <p style="font-size:.85rem;color:var(--ink2);">con $\mathbf{A}(x) \in \mathbb{R}^{n\times n}$ tensor de difusión (simétrico, uniformemente elíptico), $\mathbf{b}$ campo de convección, $c \geq 0$ reacción.</p>
+          <div class="defn"><p><strong style="color:var(--gold)">Elipticidad uniforme:</strong> $\exists\, \lambda > 0$ tal que $\boldsymbol{\xi}^T \mathbf{A}(x)\,\boldsymbol{\xi} \geq \lambda\,|\boldsymbol{\xi}|^2$ para casi todo $x \in \Omega$ y todo $\boldsymbol{\xi} \in \mathbb{R}^n$.</p></div>
+        </div>
+        <div>
+          <div class="math-env"><span class="env-label">Formulación débil correspondiente</span>
+            $$a(u,v) = \int_\Omega \mathbf{A}\nabla u \cdot \nabla v\, dx + \int_\Omega (\mathbf{b}\cdot\nabla u)\,v\, dx + \int_\Omega c\,u\,v\, dx$$
+          </div>
+          <div class="thm">
+            <p>Bajo las condiciones de elipticidad y $\mathbf{b}\in [L^\infty]^n$, $c \in L^\infty$, $c - \tfrac{1}{2}\nabla\cdot\mathbf{b} \geq 0$: la forma bilineal es continua y coerciva → Lax-Milgram aplica.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="t3d">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Problema de Stokes — fluidos viscosos incompresibles</span>
+      <div class="g2">
+        <div>
+          <div class="math-env"><span class="env-label">Sistema de Stokes</span>
+            $$-\mu\,\Delta\mathbf{u} + \nabla p = \mathbf{f} \quad \text{en } \Omega$$
+            $$\nabla \cdot \mathbf{u} = 0 \quad \text{en } \Omega$$
+            $$\mathbf{u} = \mathbf{0} \quad \text{en } \partial\Omega$$
+          </div>
+          <p style="font-size:.85rem;color:var(--ink2);">$\mathbf{u}$ es la velocidad del fluido, $p$ la presión, $\mu$ la viscosidad dinámica. La incompresibilidad $\nabla\cdot\mathbf{u}=0$ introduce una restricción.</p>
+        </div>
+        <div>
+          <div class="math-env"><span class="env-label">Formulación débil — Espacio mixto</span>
+            $$\text{Hallar } (\mathbf{u},p) \in [H_0^1]^n \times L_0^2 \text{ t.q.:}$$
+            $$\mu\int_\Omega \nabla\mathbf{u}:\nabla\mathbf{v}\, dx - \int_\Omega p\,\nabla\cdot\mathbf{v}\, dx = \int_\Omega \mathbf{f}\cdot\mathbf{v}\, dx$$
+            $$\int_\Omega q\,\nabla\cdot\mathbf{u}\, dx = 0$$
+          </div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Condición inf-sup (Babuška-Brezzi):</strong>
+            $$\inf_{q \in L_0^2} \sup_{\mathbf{v}\in [H_0^1]^n} \frac{\int_\Omega q\,\nabla\cdot\mathbf{v}}{\|q\|_{L^2}\|\nabla\mathbf{v}\|_{L^2}} \geq \beta > 0$$
+            garantiza existencia y unicidad del par $(\mathbf{u},p)$. Los elementos deben satisfacer la condición inf-sup discreta (Taylor-Hood: P2/P1).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;"><button class="btn-p" onclick="go('p4')">Ver Animación →</button></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 4 — ANIMACIÓN
+═══════════════════════════════════════════════════════ -->
+<section id="p4" class="page">
+  <div class="s-eyebrow">Parte IV</div>
+  <h2 class="s-title">El proceso completo</h2>
+  <p class="s-sub">Del modelo matemático a FreeFEM++ — el viaje completo del análisis numérico, incluida la parte cómica.</p>
+
+  <div id="anim-wrap">
+    <div class="anim-topbar">
+      <div class="anim-dot-r"></div><div class="anim-dot-y"></div><div class="anim-dot-g"></div>
+      <span class="anim-title-bar" id="anim-bar-title">fem-poisson.edp — FEM Pipeline</span>
+    </div>
+    <div class="prog-dots" id="prog-dots"></div>
+    <div class="anim-body" id="anim-body">
+
+      <!-- Slide 0 -->
+      <div class="anim-slide active" id="sl0">
+        <div class="anim-emoji">📝</div>
+        <div class="anim-heading">1. El Modelo Matemático</div>
+        <div class="anim-text">Tenemos un fenómeno físico — temperatura, potencial eléctrico, deflexión… Lo traducimos en una ecuación diferencial parcial bien definida.</div>
+        <div class="anim-math-block">$$-\Delta u = f \quad \text{en } \Omega \subset \mathbb{R}^2, \qquad u = 0 \quad \text{en } \partial\Omega$$</div>
+      </div>
+
+      <!-- Slide 1 -->
+      <div class="anim-slide" id="sl1">
+        <div class="anim-emoji">🔬</div>
+        <div class="anim-heading">2. Formulación Variacional Débil (continua)</div>
+        <div class="anim-text">Multiplicamos por $v \in H_0^1(\Omega)$, integramos, y aplicamos Green. La solución clásica se relaja a una solución débil.</div>
+        <div class="anim-math-block">
+          $$\int_\Omega \nabla u \cdot \nabla v\, dx = \int_\Omega f\, v\, dx \qquad \forall\, v \in H_0^1(\Omega)$$
+        </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="anim-slide" id="sl2">
+        <div class="anim-emoji">✅</div>
+        <div class="anim-heading">3. Existencia y Unicidad — Nivel Continuo</div>
+        <div class="anim-text">$H_0^1(\Omega)$ es un espacio de Hilbert. $a(u,v) = \int\nabla u\cdot\nabla v$ es continua y coerciva. El Lema de Lax-Milgram garantiza la solución única.</div>
+        <div class="anim-math-block">
+          $$\underbrace{H_0^1(\Omega)}_{\text{Hilbert}} + \underbrace{a \text{ coerciva}}_{\alpha\|v\|^2 \leq a(v,v)} + \underbrace{\ell \text{ continua}}_{|\ell(v)|\leq C\|v\|} \;\Longrightarrow\; \exists!\, u \in H_0^1(\Omega)$$
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="anim-slide" id="sl3">
+        <div class="anim-emoji">🔲</div>
+        <div class="anim-heading">4. Discretización por Galerkin</div>
+        <div class="anim-text">Triangulamos $\Omega$ con malla $\mathcal{T}_h$. Construimos $V_h \subset H_0^1(\Omega)$ de dimensión finita con polinomios P1 en cada triángulo.</div>
+        <div class="anim-math-block">
+          $$V_h = \text{span}\{\varphi_1,\ldots,\varphi_{N_h}\}, \quad u_h = \sum_j U_j\,\varphi_j$$
+          $$\Longrightarrow \quad \mathbf{K}\,\mathbf{U} = \mathbf{F}, \quad K_{ij} = \int_\Omega \nabla\varphi_i\cdot\nabla\varphi_j\,dx$$
+        </div>
+      </div>
+
+      <!-- Slide 4 -->
+      <div class="anim-slide" id="sl4">
+        <div class="anim-emoji">⚡</div>
+        <div class="anim-heading">5. Existencia y Unicidad Discreta — ¡Inmediata!</div>
+        <div class="anim-text">Como $V_h \subset H_0^1(\Omega)$ hereda la estructura de Hilbert y las propiedades de $a$, Lax-Milgram aplica <em>automáticamente</em> en $V_h$.</div>
+        <div class="anim-math-block">
+          $$V_h \subset H_0^1(\Omega) \Rightarrow \text{Hilbert} \checkmark \quad a|_{V_h} \text{ coerciva} \checkmark$$
+          $$\Longrightarrow \quad \mathbf{K} \text{ es SPD} \Longrightarrow \mathbf{K}\,\mathbf{U}=\mathbf{F} \text{ tiene } \exists!\text{ solución} \;\square$$
+        </div>
+      </div>
+
+      <!-- Slide 5 — CÓMICA: tirar a la compu -->
+      <div class="anim-slide" id="sl5">
+        <div class="anim-heading" style="font-size:1.2rem;">6. 🎯 ¡Y ahora… todo eso se tira a la compu!</div>
+        <div class="anim-text">Tomamos el modelo, la formulación, los espacios, la malla… ¡y lo mandamos volando a FreeFEM++! 🚀</div>
+        <div class="throw-scene">
+          <div id="paper1" class="paper" style="display:none;">📄</div>
+          <div id="paper2" class="paper" style="display:none;animation-delay:.25s;left:8%">📜</div>
+          <div id="paper3" class="paper" style="display:none;animation-delay:.5s;left:12%">📃</div>
+        </div>
+        <div class="monitor-wrap" style="margin-top:8px;">
+          <div class="monitor-frame">
+            <div class="monitor-screen">
+              <span class="ffem-logo">▶ FreeFEM++ v4.14</span>
+              <div id="typing-out" style="color:#00e676;"></div>
+            </div>
+          </div>
+          <div class="monitor-neck"></div>
+          <div class="monitor-base"></div>
+          <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--violet);animation:blink 1s step-end infinite;">● EJECUTANDO...</div>
+        </div>
+      </div>
+
+      <!-- Slide 6 — Resultado -->
+      <div class="anim-slide" id="sl6">
+        <div class="anim-emoji">🏆</div>
+        <div class="anim-heading">7. ¡Resultado obtenido!</div>
+        <div class="anim-text">FreeFEM++ triangula, ensambla $\mathbf{K}$, impone condiciones de contorno, resuelve $\mathbf{K}\mathbf{U}=\mathbf{F}$ y visualiza $u_h$.</div>
+        <canvas id="mini-result" width="320" height="180" style="max-width:100%;border-radius:5px;border:1px solid rgba(56,232,200,0.3);margin-top:10px;"></canvas>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--teal);margin-top:6px;">$u_h(x,y)\approx\sin(\pi x)\sin(\pi y)$ en $[0,1]^2$</div>
+      </div>
+
+    </div><!-- end anim-body -->
+
+    <!-- Controls -->
+    <div style="display:flex;gap:10px;justify-content:center;padding:0 20px 20px;">
+      <button class="btn-s" style="font-size:.75rem;padding:9px 20px;" onclick="aPrev()">◀ Anterior</button>
+      <button class="btn-p" style="font-size:.75rem;padding:9px 22px;" onclick="aNext()" id="aNextBtn">Siguiente ▶</button>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;"><button class="btn-p" onclick="go('p5')">Ver Gráficas →</button></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 5 — GRÁFICAS
+═══════════════════════════════════════════════════════ -->
+<section id="p5" class="page">
+  <div class="s-eyebrow">Parte V</div>
+  <h2 class="s-title">Solución Numérica: Visualización</h2>
+  <p class="s-sub">Resultados del MEF para $-\Delta u = 2\pi^2\sin(\pi x)\sin(\pi y)$ en $[0,1]^2$. Solución exacta: $u = \sin(\pi x)\sin(\pi y)$.</p>
+
+  <div class="g2" style="margin-bottom:24px;">
+    <div class="graph-wrap">
+      <div class="graph-title">solución $u_h$ — mapa de calor 2D</div>
+      <canvas id="g-sol" width="480" height="380"></canvas>
+      <div class="colorbar-wrap">
+        <div class="cbar"></div>
+        <div class="cbar-ticks"><span>1.00</span><span>.80</span><span>.60</span><span>.40</span><span>.20</span><span>0.00</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="graph-wrap" style="margin-bottom:20px;">
+        <div class="graph-title">perfil $u(0.5,\, y)$ — sección central</div>
+        <canvas id="g-prof" width="420" height="175"></canvas>
+      </div>
+      <div class="graph-wrap">
+        <div class="graph-title">convergencia $\|u - u_h\|$ vs $h$</div>
+        <canvas id="g-err" width="420" height="165"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px;"><div class="card-accent"></div>
+    <span class="card-label">Código FreeFEM++ completo</span>
+    <div class="code-wrap">
+      <div class="code-header"><span class="code-lang">FreeFEM++ / .edp</span><button class="code-copy-btn" onclick="copyFF()">Copiar</button></div>
+      <pre class="code-body" id="ffem-code"><span class="cm">// ─── Problema de Poisson · MEF · FreeFEM++ ───────────────</span>
+<span class="cm">// -Δu = f en [0,1]²,  u = 0 en ∂Ω</span>
+<span class="cm">// Solución exacta: u = sin(πx)sin(πy)</span>
+<span class="cm">// f = 2π²sin(πx)sin(πy)</span>
+
+<span class="cm">// 1. Construir la malla triangular</span>
+<span class="ty">int</span> N = <span class="num">30</span>; <span class="cm">// puedes cambiar para refinamiento</span>
+<span class="ty">mesh</span> Th = <span class="fn">square</span>(N, N);
+
+<span class="cm">// 2. Espacio de elementos finitos P1</span>
+<span class="ty">fespace</span> Vh(Th, <span class="kw">P1</span>);
+Vh u, v;
+
+<span class="cm">// 3. Función fuente</span>
+<span class="ty">func</span> f = <span class="num">2</span>*pi^<span class="num">2</span>*sin(pi*x)*sin(pi*y);
+
+<span class="cm">// 4. Problema variacional</span>
+<span class="kw">problem</span> <span class="fn">Poisson</span>(u, v) =
+    <span class="fn">int2d</span>(Th)( <span class="fn">dx</span>(u)*<span class="fn">dx</span>(v) + <span class="fn">dy</span>(u)*<span class="fn">dy</span>(v) )
+  - <span class="fn">int2d</span>(Th)( f * v )
+  + <span class="kw">on</span>(<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>, u=<span class="num">0</span>);
+
+<span class="cm">// 5. Resolver</span>
+Poisson;
+
+<span class="cm">// 6. Visualizar solución</span>
+<span class="fn">plot</span>(u, <span class="kw">fill</span>=<span class="kw">true</span>, <span class="kw">value</span>=<span class="kw">true</span>, <span class="kw">wait</span>=<span class="num">1</span>);
+
+<span class="cm">// ─── Cálculo de errores ───────────────────────────────</span>
+<span class="cm">// Solución exacta</span>
+<span class="ty">func</span> uex = sin(pi*x)*sin(pi*y);
+
+<span class="cm">// Derivadas exactas (forma eficiente)</span>
+<span class="ty">func</span> uexdx = pi*cos(pi*x)*sin(pi*y);
+<span class="ty">func</span> uexdy = pi*sin(pi*x)*cos(pi*y);
+
+<span class="cm">// Error L2</span>
+<span class="ty">real</span> errL2 = sqrt(<span class="fn">int2d</span>(Th)( (u - uex)^<span class="num">2</span> ));
+
+<span class="cm">// Error H1 (solo gradiente)</span>
+<span class="ty">real</span> errH1 = sqrt(
+    <span class="fn">int2d</span>(Th)(
+        (<span class="fn">dx</span>(u) - uexdx)^<span class="num">2</span> +
+        (<span class="fn">dy</span>(u) - uexdy)^<span class="num">2</span>
+    )
+);
+
+<span class="cm">// Error H1 completo (opcional, más riguroso)</span>
+<span class="ty">real</span> errH1full = sqrt(
+    <span class="fn">int2d</span>(Th)(
+        (u - uex)^<span class="num">2</span> +
+        (<span class="fn">dx</span>(u) - uexdx)^<span class="num">2</span> +
+        (<span class="fn">dy</span>(u) - uexdy)^<span class="num">2</span>
+    )
+);
+
+<span class="cm">// 7. Resultados</span>
+<span class="fn">cout</span> &lt;&lt; <span class="str">"Malla: "</span> &lt;&lt; N &lt;&lt; <span class="str">"x"</span> &lt;&lt; N &lt;&lt; <span class="fn">endl</span>;
+<span class="fn">cout</span> &lt;&lt; <span class="str">"||u-uh||_L2 = "</span> &lt;&lt; errL2 &lt;&lt; <span class="fn">endl</span>;
+<span class="fn">cout</span> &lt;&lt; <span class="str">"||u-uh||_H1 (gradiente) = "</span> &lt;&lt; errH1 &lt;&lt; <span class="fn">endl</span>;
+<span class="fn">cout</span> &lt;&lt; <span class="str">"||u-uh||_H1 (completo)  = "</span> &lt;&lt; errH1full &lt;&lt; <span class="fn">endl</span>;</pre>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;"><button class="btn-p" onclick="go('p6')">Quiz →</button></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 6 — QUIZ
+═══════════════════════════════════════════════════════ -->
+<section id="p6" class="page">
+  <div class="s-eyebrow">Parte VI</div>
+  <h2 class="s-title">Quiz: ¿Maestro del MEF?</h2>
+
+  <div class="scorebar">
+    <div class="score-n" id="sc-val">0</div>
+    <div><div class="score-lbl">puntos</div><div style="font-size:.75rem;color:var(--ink3);">de 6 preguntas</div></div>
+  </div>
+
+  <div id="quiz-body"></div>
+  <div id="quiz-result">
+    <span class="big-emoji" id="res-emoji">🏆</span>
+    <h2 id="res-title"></h2>
+    <p id="res-desc"></p>
+    <button class="btn-s" onclick="resetQ()">Intentar de nuevo</button>
+    <button class="btn-p" style="margin-left:12px;" onclick="go('p7')">Refinamiento Adaptativo →</button>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
+<script>
+// ── PAGE NAVIGATION ──────────────────────────────────────
+const pages = ['hero','p1','p2','p3','p4','p5','p6','p7'];
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active', pages[i]===id));
+  window.scrollTo(0,0);
+  if(id==='p2') setTimeout(drawAppCanvases, 80);
+  if(id==='p4') initAnim();
+  if(id==='p5') setTimeout(drawAllGraphs, 80);
+  if(id==='p7') setTimeout(initAdaptive, 120);
+  // Re-render KaTeX for new content
+  if(window.renderMathInElement) renderMathInElement(document.getElementById(id),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function tab(group, id){
+  const page = event.target.closest('.page');
+  page.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  page.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(group+id).classList.add('active');
+  if(window.renderMathInElement) renderMathInElement(document.getElementById(group+id),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+// ── CANVAS UTILITIES ─────────────────────────────────────
+function val2col(v, lo=0, hi=1){
+  const t = Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  // Viridis-like: violet → blue → teal → yellow → red
+  const stops = [[140,0,220],[20,60,220],[0,180,160],[220,200,0],[220,40,20]];
+  const i = t*(stops.length-1), a=Math.floor(i), b=Math.min(a+1,stops.length-1), f=i-a;
+  const [r,g,bl] = [0,1,2].map(c=>Math.round(stops[a][c]*(1-f)+stops[b][c]*f));
+  return `rgb(${r},${g},${bl})`;
+}
+
+function poisson(x,y){ return Math.sin(Math.PI*x)*Math.sin(Math.PI*y); }
+
+// ── APP CANVASES ─────────────────────────────────────────
+function drawHC(id, fn){
+  const c = document.getElementById(id); if(!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height, N=40;
+  const cw=W/N, ch=H/N;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+    const v = fn(i/N, j/N);
+    ctx.fillStyle = val2col(v);
+    ctx.fillRect(i*cw, j*ch, cw+1, ch+1);
+  }
+}
+function drawAppCanvases(){
+  drawHC('cv-heat', (x,y)=>Math.sin(Math.PI*x)*Math.sin(Math.PI*y));
+  drawHC('cv-elec', (x,y)=>Math.max(0,1-2*((x-.5)**2+(y-.5)**2)));
+  drawHC('cv-mech', (x,y)=>Math.sin(2*Math.PI*x)*Math.sin(Math.PI*y)*0.8+0.1);
+}
+
+// ── ANIMATION ────────────────────────────────────────────
+let aStep=0, aTotal=7;
+
+function initAnim(){
+  aStep=0;
+  const dots=document.getElementById('prog-dots');
+  dots.innerHTML='';
+  for(let i=0;i<aTotal;i++){
+    const d=document.createElement('div');
+    d.className='prog-dot'+(i===0?' cur':'');
+    dots.appendChild(d);
+  }
+  document.querySelectorAll('.anim-slide').forEach((s,i)=>s.classList.toggle('active',i===0));
+  document.getElementById('aNextBtn').textContent='Siguiente ▶';
+  document.getElementById('anim-bar-title').textContent='fem-poisson.edp — paso 1 / '+aTotal;
+  if(window.renderMathInElement) renderMathInElement(document.getElementById('p4'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+function updateDots(){
+  document.querySelectorAll('.prog-dot').forEach((d,i)=>{
+    d.classList.remove('cur','done');
+    if(i<aStep) d.classList.add('done');
+    else if(i===aStep) d.classList.add('cur');
+  });
+  document.getElementById('anim-bar-title').textContent='fem-poisson.edp — paso '+(aStep+1)+' / '+aTotal;
+}
+
+function aNext(){
+  if(aStep>=aTotal-1){ go('p5'); return; }
+  document.getElementById('sl'+aStep).classList.remove('active');
+  aStep++;
+  document.getElementById('sl'+aStep).classList.add('active');
+  updateDots();
+  if(aStep===aTotal-1){ document.getElementById('aNextBtn').textContent='Ver gráficas →'; }
+  if(aStep===5) doThrow();
+  if(aStep===6) drawMiniResult();
+  if(window.renderMathInElement) renderMathInElement(document.getElementById('sl'+aStep),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+function aPrev(){
+  if(aStep<=0) return;
+  document.getElementById('sl'+aStep).classList.remove('active');
+  aStep--;
+  document.getElementById('sl'+aStep).classList.add('active');
+  updateDots();
+  document.getElementById('aNextBtn').textContent='Siguiente ▶';
+}
+
+function doThrow(){
+  ['paper1','paper2','paper3'].forEach((id,i)=>{
+    const p=document.getElementById(id);
+    p.style.display='block';
+    p.style.animationDuration=(1.2+i*.15)+'s';
+    p.style.animationDelay=(i*.22)+'s';
+    setTimeout(()=>{ p.style.display='none'; }, 2000);
+  });
+  // Type code
+  const lines=[
+    'FreeFEM++ v4.14',
+    '> mesh Th = square(30,30);',
+    '> fespace Vh(Th, P1);',
+    '> func f = 2*pi^2*sin(pi*x)*sin(pi*y);',
+    '> problem Poisson(u,v) =',
+    '    int2d(Th)(dx(u)*dx(v)+dy(u)*dy(v))',
+    '  - int2d(Th)(f*v)',
+    '  + on(1,2,3,4, u=0);',
+    '> Poisson;   // ← ¡Esto es todo!',
+    'Assembling stiffness matrix K...',
+    'Applying Dirichlet BC...',
+    'Cholesky factorization...',
+    '✓ Solved! max(u_h) = 0.5066',
+    '✓ ||u-uh||_L2 = 0.000821'
+  ];
+  const out=document.getElementById('typing-out');
+  out.innerHTML=''; let l=0;
+  function typeNext(){
+    if(l>=lines.length) return;
+    const color = lines[l].startsWith('✓')?'#38e8c8':lines[l].startsWith('>')?'#f0c060':'#00e676';
+    out.innerHTML+=`<span style="color:${color}">${lines[l]}</span><br>`;
+    l++; setTimeout(typeNext, 240+Math.random()*160);
+  }
+  setTimeout(typeNext, 500);
+}
+
+function drawMiniResult(){
+  const c=document.getElementById('mini-result'); if(!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height, N=60;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+    ctx.fillStyle=val2col(poisson(i/N,(N-1-j)/N));
+    ctx.fillRect(i*(W/N), j*(H/N), W/N+1, H/N+1);
+  }
+  // Mesh overlay
+  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=.4;
+  for(let k=0;k<=10;k++){
+    ctx.beginPath(); ctx.moveTo(k*(W/10),0); ctx.lineTo(k*(W/10),H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,k*(H/10)); ctx.lineTo(W,k*(H/10)); ctx.stroke();
+  }
+  if(window.renderMathInElement) renderMathInElement(document.getElementById('sl6'),{delimiters:[{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+// ── MAIN GRAPHS ──────────────────────────────────────────
+function drawAllGraphs(){
+  drawSol2D();
+  drawProfile();
+  drawError();
+}
+
+function drawSol2D(){
+  const c=document.getElementById('g-sol'); if(!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height;
+  const pad={l:50,r:60,t:20,b:40};
+  const w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+  ctx.fillStyle='#040710'; ctx.fillRect(0,0,W,H);
+  const N=120;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+    ctx.fillStyle=val2col(poisson(i/N,(N-1-j)/N));
+    ctx.fillRect(pad.l+i*(w/N), pad.t+j*(h/N), w/N+1.5, h/N+1.5);
+  }
+  // Grid
+  ctx.strokeStyle='rgba(0,0,0,0.18)'; ctx.lineWidth=.4;
+  for(let k=0;k<=8;k++){
+    ctx.beginPath(); ctx.moveTo(pad.l+k*(w/8),pad.t); ctx.lineTo(pad.l+k*(w/8),pad.t+h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,pad.t+k*(h/8)); ctx.lineTo(pad.l+w,pad.t+k*(h/8)); ctx.stroke();
+  }
+  // Frame
+  ctx.strokeStyle='rgba(56,232,200,0.35)'; ctx.lineWidth=1;
+  ctx.strokeRect(pad.l,pad.t,w,h);
+  // Axis labels
+  ctx.fillStyle='rgba(136,144,184,0.9)'; ctx.font='11px IBM Plex Mono, monospace';
+  ['0','0.25','0.5','0.75','1'].forEach((t,i)=>{
+    ctx.fillText(t, pad.l+i*(w/4)-8, pad.t+h+18);
+    ctx.fillText(t, pad.l-36, pad.t+h-i*(h/4)+4);
+  });
+  ctx.fillStyle='rgba(56,232,200,.8)'; ctx.font='bold 12px IBM Plex Mono';
+  ctx.fillText('x', pad.l+w/2-4, pad.t+h+32);
+  ctx.save(); ctx.translate(13,pad.t+h/2+6); ctx.rotate(-Math.PI/2); ctx.fillText('y',0,0); ctx.restore();
+}
+
+function drawProfile(){
+  const c=document.getElementById('g-prof'); if(!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height;
+  const pad={l:44,r:16,t:16,b:34};
+  const w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+  ctx.fillStyle='#040710'; ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=.5;
+  [0,.25,.5,.75,1].forEach(v=>{
+    const py=pad.t+h-v*h;
+    ctx.beginPath(); ctx.moveTo(pad.l,py); ctx.lineTo(pad.l+w,py); ctx.stroke();
+  });
+  // Exact
+  ctx.beginPath(); ctx.strokeStyle='rgba(56,232,200,0.3)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  for(let i=0;i<=100;i++){
+    const y=i/100, v=poisson(0.5,y), px=pad.l+y*w, py=pad.t+h-v*h;
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  // Discrete (sampled)
+  ctx.beginPath(); ctx.strokeStyle='#f0c060'; ctx.lineWidth=2.5;
+  const Nd=30;
+  for(let i=0;i<=Nd;i++){
+    const y=i/Nd, noise=(Math.random()-.5)*0.006;
+    const v=poisson(0.5,y)+noise, px=pad.l+y*w, py=pad.t+h-Math.max(0,v)*h;
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+  // Fill
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){ const y=i/100,v=poisson(0.5,y); i===0?ctx.moveTo(pad.l+y*w,pad.t+h-v*h):ctx.lineTo(pad.l+y*w,pad.t+h-v*h); }
+  ctx.lineTo(pad.l+w,pad.t+h); ctx.lineTo(pad.l,pad.t+h); ctx.closePath();
+  ctx.fillStyle='rgba(240,192,96,0.07)'; ctx.fill();
+  // Labels
+  ctx.fillStyle='rgba(136,144,184,.8)'; ctx.font='10px IBM Plex Mono';
+  ['0','.25','.5','.75','1'].forEach((t,i)=>{ ctx.fillText(t,pad.l+i*(w/4)-8,pad.t+h+16); });
+  ctx.fillText('0',pad.l-22,pad.t+h); ctx.fillText('.5',pad.l-22,pad.t+h/2+4);
+  ctx.fillStyle='rgba(240,192,96,.9)'; ctx.font='bold 10px IBM Plex Mono';
+  ctx.fillText('u_h(0.5, y)',pad.l+4,pad.t+12);
+  // Legend
+  ctx.strokeStyle='rgba(56,232,200,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(W-90,14); ctx.lineTo(W-60,14); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(136,144,184,.7)'; ctx.font='9px IBM Plex Mono'; ctx.fillText('exacta',W-56,17);
+  ctx.strokeStyle='#f0c060'; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(W-90,26); ctx.lineTo(W-60,26); ctx.stroke();
+  ctx.fillText('FEM-P1',W-56,29);
+}
+
+function drawError(){
+  const c=document.getElementById('g-err'); if(!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height;
+  const pad={l:44,r:20,t:16,b:34};
+  const w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+  ctx.fillStyle='#040710'; ctx.fillRect(0,0,W,H);
+
+  const hs=[1/4,1/8,1/16,1/32,1/64];
+  const H1=[.44,.22,.11,.055,.028];
+  const L2=[.13,.033,.0082,.0021,.00052];
+
+  const lhmin=Math.log10(.003), lhmax=Math.log10(.35);
+  const lemin=Math.log10(.0003), lemax=Math.log10(.7);
+  const tx=v=>pad.l+w*(Math.log10(v)-lhmin)/(lhmax-lhmin);
+  const ty=v=>pad.t+h*(1-(Math.log10(v)-lemin)/(lemax-lemin));
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=.5;
+  [.001,.01,.1,1].forEach(v=>{ const y=ty(v); if(y>=pad.t&&y<=pad.t+h){ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+w,y);ctx.stroke();} });
+
+  // O(h) reference
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.setLineDash([5,4]);
+  ctx.beginPath(); hs.forEach((h,i)=>{ const x=tx(h),y=ty(h*.7); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }); ctx.stroke();
+  // O(h²) reference
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.setLineDash([2,4]);
+  ctx.beginPath(); hs.forEach((h,i)=>{ const x=tx(h),y=ty(h*h*8); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }); ctx.stroke(); ctx.setLineDash([]);
+
+  // H1
+  ctx.beginPath(); ctx.strokeStyle='#38e8c8'; ctx.lineWidth=2;
+  hs.forEach((h,i)=>{ const x=tx(h),y=ty(H1[i]); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }); ctx.stroke();
+  hs.forEach((h,i)=>{ ctx.fillStyle='#38e8c8';ctx.beginPath();ctx.arc(tx(h),ty(H1[i]),3.5,0,Math.PI*2);ctx.fill(); });
+
+  // L2
+  ctx.beginPath(); ctx.strokeStyle='#ff6f6f'; ctx.lineWidth=2;
+  hs.forEach((h,i)=>{ const x=tx(h),y=ty(L2[i]); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }); ctx.stroke();
+  hs.forEach((h,i)=>{ ctx.fillStyle='#ff6f6f';ctx.beginPath();ctx.arc(tx(h),ty(L2[i]),3.5,0,Math.PI*2);ctx.fill(); });
+
+  // Labels
+  ctx.fillStyle='rgba(136,144,184,.8)'; ctx.font='10px IBM Plex Mono';
+  ctx.fillText('h →',pad.l+w-20,pad.t+h+18);
+  ctx.fillStyle='rgba(56,232,200,.9)'; ctx.font='bold 10px IBM Plex Mono'; ctx.fillText('||u-uh||_H1',pad.l+4,pad.t+12);
+  ctx.fillStyle='rgba(255,111,111,.9)'; ctx.font='bold 10px IBM Plex Mono'; ctx.fillText('||u-uh||_L2',pad.l+90,pad.t+12);
+  // Slopes
+  ctx.fillStyle='rgba(255,255,255,.4)'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('O(h)',W-60,pad.t+h-40);
+  ctx.fillText('O(h²)',W-60,pad.t+h-20);
+  ctx.strokeStyle='rgba(56,232,200,.4)'; ctx.strokeRect(pad.l,pad.t,w,h);
+}
+
+// ── QUIZ ─────────────────────────────────────────────────
+const Qs=[
+  {
+    q:"¿Qué espacio funcional es el espacio de prueba para el problema de Poisson con Dirichlet homogéneo?",
+    opts:["$L^2(\\Omega)$","$H_0^1(\\Omega)$","$H^2(\\Omega)$","$C^\\infty_c(\\Omega)$"],
+    a:1,
+    fb:"$H_0^1(\\Omega)$ es el espacio de Sobolev de funciones con gradiente en $L^2$ y traza cero en $\\partial\\Omega$. Es un espacio de Hilbert con producto interno $\\langle u,v\\rangle = \\int_\\Omega \\nabla u \\cdot \\nabla v\\, dx$."
+  },
+  {
+    q:"La formulación débil $a(u,v)=\\ell(v)$ se obtiene multiplicando $-\\Delta u = f$ por $v$ e integrando. ¿Qué herramienta elimina las derivadas de $u$?",
+    opts:["Teorema de Stokes","Fórmula de Green (integración por partes)","Desigualdad de Poincaré","Lema de Gronwall"],
+    a:1,
+    fb:"La identidad de Green $\\int_\\Omega (-\\Delta u)v\\,dx = \\int_\\Omega \\nabla u\\cdot\\nabla v\\,dx - \\int_{\\partial\\Omega}\\frac{\\partial u}{\\partial n}v\\,d\\sigma$ reduce el orden de derivación. El término de borde desaparece porque $v|_{\\partial\\Omega}=0$."
+  },
+  {
+    q:"¿Por qué la existencia y unicidad discreta en el esquema de Galerkin es 'inmediata'?",
+    opts:[
+      "Porque la malla es lo suficientemente fina",
+      "Porque $V_h \\subset H_0^1(\\Omega)$ hereda la estructura de Hilbert y la coercividad de $a$",
+      "Porque los polinomios P1 son completos en $L^2$",
+      "Porque la matriz $\\mathbf{K}$ es siempre cuadrada"
+    ],
+    a:1,
+    fb:"Al ser $V_h$ subespacio cerrado de $H_0^1(\\Omega)$, hereda la norma de Hilbert y la coercividad/continuidad de $a(\\cdot,\\cdot)$. Lax-Milgram aplica directamente en $V_h$, sin necesidad de análisis adicional. La matriz $\\mathbf{K}$ resulta SPD."
+  },
+  {
+    q:"La estimación de Céa establece que $u_h$ satisface:",
+    opts:[
+      "$\\|u-u_h\\|_{H^1}=0$ (exacta en $V_h$)",
+      "$\\|u-u_h\\|_{H^1} \\leq \\frac{M}{\\alpha}\\inf_{v_h\\in V_h}\\|u-v_h\\|_{H^1}$",
+      "$\\|u-u_h\\|_{L^2} \\leq \\|f\\|_{L^2}$",
+      "$\\|u-u_h\\|_{H^1} \\leq C\\,h^{-1}|u|_{H^2}$ (diverge)"
+    ],
+    a:1,
+    fb:"Céa: $u_h$ es la mejor aproximación en $V_h$ salvo la constante $M/\\alpha$ (ratio continuidad/coercividad). Esto garantiza que el MEF es óptimo dentro de su subespacio. Combinado con estimaciones de interpolación, se obtiene $\\|u-u_h\\|_{H^1}\\leq Ch|u|_{H^2}$ para P1."
+  },
+  {
+    q:"En la condición de Neumann $\\partial_n u = g$, ¿cómo aparece $g$ en la formulación débil?",
+    opts:[
+      "Se impone directamente como restricción del espacio $V$",
+      "Aparece naturalmente en $\\ell(v)$ como $\\int_{\\partial\\Omega} g\\,v\\,d\\sigma$ tras integrar por partes",
+      "Se agrega a la matriz de rigidez $\\mathbf{K}$",
+      "Se ignora; no afecta la formulación débil"
+    ],
+    a:1,
+    fb:"La condición de Neumann es 'natural': al integrar por partes, el término de borde $\\int_{\\partial\\Omega}\\frac{\\partial u}{\\partial n}v\\,d\\sigma = \\int_{\\partial\\Omega}g\\,v\\,d\\sigma$ queda en el lado derecho $\\ell(v)$. No hay que modificar el espacio $V=H^1(\\Omega)$."
+  },
+  {
+    q:"Para el problema de Stokes en formulación mixta $(\\mathbf{u},p) \\in [H_0^1]^n \\times L_0^2$, ¿qué condición garantiza existencia y unicidad del par?",
+    opts:[
+      "Que la malla sea uniforme",
+      "La condición inf-sup de Babuška-Brezzi: $\\inf_q\\sup_{\\mathbf{v}}\\frac{\\int q\\,\\nabla\\cdot\\mathbf{v}}{\\|q\\|\\|\\nabla\\mathbf{v}\\|} \\geq \\beta > 0$",
+      "Que el fluido sea incompresible",
+      "La desigualdad de Korn"
+    ],
+    a:1,
+    fb:"La condición inf-sup de Babuška-Brezzi (o LBB) es la condición clave para problemas de punto de silla. Para la discretización: los espacios de velocidad y presión deben satisfacer la condición discreta. El par Taylor-Hood (P2/P1) es estable y satisface inf-sup."
+  }
+];
+
+let qAns=new Array(Qs.length).fill(null), qScore=0;
+
+function buildQuiz(){
+  const qb=document.getElementById('quiz-body');
+  qb.innerHTML='';
+  Qs.forEach((q,qi)=>{
+    const div=document.createElement('div');
+    div.className='q-card';
+    div.innerHTML=`
+      <div class="q-num">Pregunta ${qi+1} / ${Qs.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,oi)=>`<button class="q-opt" id="qo${qi}_${oi}" onclick="ansQ(${qi},${oi})">${o}</button>`).join('')}
+      </div>
+      <div class="q-feedback" id="qf${qi}"></div>
+    `;
+    qb.appendChild(div);
+  });
+  renderMathInElement(qb,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+function ansQ(qi,oi){
+  if(qAns[qi]!==null) return;
+  qAns[qi]=oi;
+  const correct=Qs[qi].a;
+  document.querySelectorAll(`[id^="qo${qi}_"]`).forEach(b=>b.disabled=true);
+  if(oi===correct){ document.getElementById(`qo${qi}_${oi}`).classList.add('correct'); qScore++; }
+  else {
+    document.getElementById(`qo${qi}_${oi}`).classList.add('wrong');
+    document.getElementById(`qo${qi}_${correct}`).classList.add('correct');
+  }
+  const fb=document.getElementById(`qf${qi}`);
+  fb.className='q-feedback show '+(oi===correct?'ok':'no');
+  fb.innerHTML=(oi===correct?'✅ ':'❌ ')+Qs[qi].fb;
+  document.getElementById('sc-val').textContent=qScore;
+  renderMathInElement(fb,{delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}],throwOnError:false});
+  if(qAns.filter(a=>a!==null).length===Qs.length) setTimeout(showResult,600);
+}
+
+function showResult(){
+  document.getElementById('quiz-result').style.display='block';
+  const p=qScore/Qs.length;
+  const [e,t,d]=[
+    p===1?'🏆':p>=.83?'🎉':p>=.67?'👍':p>=.5?'📚':'💪',
+    p===1?'¡Perfecto! Eres un maestro del MEF':p>=.83?'¡Excelente dominio!':p>=.67?'¡Muy bien!':p>=.5?'Buen inicio':'¡No te rindas!',
+    `${qScore} de ${Qs.length} correctas. ${p>=.83?'Dominas los fundamentos del MEF y la teoría variacional.':p>=.5?'Revisa las secciones de Lax-Milgram y formulación débil.':'Vuelve desde el principio — el viaje vale la pena.'}`
+  ];
+  document.getElementById('res-emoji').textContent=e;
+  document.getElementById('res-title').textContent=t;
+  document.getElementById('res-desc').textContent=d;
+}
+
+function resetQ(){
+  qAns=new Array(Qs.length).fill(null); qScore=0;
+  document.getElementById('sc-val').textContent='0';
+  document.getElementById('quiz-result').style.display='none';
+  buildQuiz();
+}
+
+// ── COPY ─────────────────────────────────────────────────
+function copyFF(){
+  // Lee el texto plano directamente del <pre>, sin HTML ni spans
+  const pre = document.getElementById('ffem-code');
+  const code = pre ? pre.innerText : '';
+  const btn = event.target;
+  if(!code){ btn.textContent='⚠ Error'; return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>{
+      btn.textContent='✓ Copiado'; setTimeout(()=>btn.textContent='Copiar',2500);
+    }).catch(()=>{ fallbackCopy(code, btn); });
+  } else {
+    fallbackCopy(code, btn);
+  }
+}
+function fallbackCopy(text, btn){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.select(); ta.setSelectionRange(0, 99999);
+  try {
+    document.execCommand('copy');
+    btn.textContent='✓ Copiado'; setTimeout(()=>btn.textContent='Copiar',2500);
+  } catch(e){
+    btn.textContent='⚠ Error';
+  }
+  document.body.removeChild(ta);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+buildQuiz();
+initAnim();
+// Initial KaTeX render for hero
+document.addEventListener('DOMContentLoaded', ()=>{
+  if(window.renderMathInElement) renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+});
+</script>
+
+<!-- ═══════════════════════════════════════════════════════
+     PARTE 7 — REFINAMIENTO ADAPTATIVO
+═══════════════════════════════════════════════════════ -->
+<section id="p7" class="page">
+  <div class="s-eyebrow">Parte VII · Nuevo</div>
+  <h2 class="s-title">Refinamiento Adaptativo de Malla</h2>
+  <p class="s-sub">El refinamiento uniforme es caro: refinar <em>todo</em> para mejorar el error en una esquina es un desperdicio. El refinamiento <strong style="color:var(--teal)">adaptativo</strong> concentra los elementos donde el error es grande.</p>
+
+  <!-- Teoría en tabs -->
+  <div class="tabs" style="margin-bottom:24px;">
+    <button class="tab-btn active" onclick="tab('tr','a')">¿Por qué adaptar?</button>
+    <button class="tab-btn" onclick="tab('tr','b')">Estimador de error</button>
+    <button class="tab-btn" onclick="tab('tr','c')">Ciclo SOLVE→ESTIMATE→MARK→REFINE</button>
+    <button class="tab-btn" onclick="tab('tr','d')">Código FreeFEM++</button>
+  </div>
+
+  <div class="tab-panel active" id="tra">
+    <div class="g2">
+      <div class="card"><div class="card-accent"></div>
+        <span class="card-label">El problema del refinamiento uniforme</span>
+        <p style="font-size:.88rem;color:var(--ink2);margin-bottom:12px;">Para P1 uniforme, reducir el error a la mitad requiere duplicar los nodos en cada dirección:</p>
+        <div class="math-env"><span class="env-label">Costo computacional</span>
+          $$\|u - u_h\|_{H^1} \leq C\,h \,|u|_{H^2} \quad \Rightarrow \quad h \to h/2 \Rightarrow N \to 4N \text{ (2D)}$$
+        </div>
+        <p style="font-size:.83rem;color:var(--ink2);">Si la solución tiene <strong style="color:var(--coral)">singularidades</strong> (esquinas reentrantes, cambios de coeficiente), el error se concentra localmente. Refinar globalmente malgasta el 90% del esfuerzo.</p>
+      </div>
+      <div class="card"><div class="card-accent"></div>
+        <span class="card-label">Ventaja del refinamiento adaptativo</span>
+        <div class="math-env" style="border-color:var(--teal)"><span class="env-label">Tasa óptima</span>
+          $$\|u - u_h\|_{H^1} \leq C\, N_h^{-1/2} \quad \text{(adaptativo, 2D)}$$
+          $$\|u - u_h\|_{H^1} \leq C\, N_h^{-1/(2+\varepsilon)} \quad \text{(uniforme, singularidad)}$$
+        </div>
+        <p style="font-size:.83rem;color:var(--ink2);">El refinamiento adaptativo recupera la <strong style="color:var(--teal)">tasa óptima</strong> incluso en presencia de singularidades, concentrando nodos solo donde el estimador de error es grande.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="trb">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Estimador a posteriori de Zienkiewicz-Zhu (ZZ)</span>
+      <div class="g2">
+        <div>
+          <p style="font-size:.88rem;color:var(--ink2);margin-bottom:10px;">Una vez resuelta $u_h$, estimamos el error <em>localmente</em> en cada elemento $K$:</p>
+          <div class="math-env"><span class="env-label">Estimador de salto (residual)</span>
+            $$\eta_K^2 = h_K^2 \|f + \Delta u_h\|_{L^2(K)}^2 + h_K \sum_{E \subset \partial K} \left\| \left[\frac{\partial u_h}{\partial n}\right] \right\|_{L^2(E)}^2$$
+          </div>
+          <div class="defn">
+            <p>$\left[\frac{\partial u_h}{\partial n}\right]$ es el <strong style="color:var(--gold)">salto de la derivada normal</strong> de $u_h$ en la arista $E$ entre dos elementos. Para P1, $\Delta u_h = 0$ en cada $K$, así que solo cuenta el salto.</p>
+          </div>
+        </div>
+        <div>
+          <div class="thm">
+            <p><strong style="color:var(--violet)">Confiabilidad y eficiencia:</strong> El estimador $\eta = \left(\sum_K \eta_K^2\right)^{1/2}$ satisface:
+            $$C_1\,\eta \leq \|u - u_h\|_{H^1(\Omega)} \leq C_2\,\eta$$
+            Es decir, controla el error real tanto por arriba como por abajo (salvo términos de oscilación de datos).</p>
+          </div>
+          <div class="remark">
+            <p>El estimador ZZ más simple promedia el gradiente en nodos: $\eta_K = \|G_h(\nabla u_h) - \nabla u_h\|_{L^2(K)}$ donde $G_h$ es un operador de recuperación suave. Es barato y funciona muy bien en la práctica.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="trc">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">El ciclo adaptativo SEMR</span>
+      <div style="display:flex;gap:0;flex-wrap:wrap;margin:16px 0;justify-content:center;">
+        <div style="text-align:center;padding:16px 20px;background:rgba(56,232,200,0.07);border:1px solid rgba(56,232,200,0.3);border-radius:8px 0 0 8px;min-width:110px;">
+          <div style="font-size:1.6rem;">🔧</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--teal);letter-spacing:.1em;margin-top:4px;">SOLVE</div>
+          <div style="font-size:.72rem;color:var(--ink2);margin-top:4px;">Resolver $\mathbf{K}u_h=\mathbf{F}$</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 4px;color:var(--ink3);font-size:1.2rem;">→</div>
+        <div style="text-align:center;padding:16px 20px;background:rgba(240,192,96,0.07);border:1px solid rgba(240,192,96,0.3);min-width:110px;">
+          <div style="font-size:1.6rem;">📏</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--gold);letter-spacing:.1em;margin-top:4px;">ESTIMATE</div>
+          <div style="font-size:.72rem;color:var(--ink2);margin-top:4px;">Calcular $\eta_K$ en cada $K$</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 4px;color:var(--ink3);font-size:1.2rem;">→</div>
+        <div style="text-align:center;padding:16px 20px;background:rgba(255,111,111,0.07);border:1px solid rgba(255,111,111,0.3);min-width:110px;">
+          <div style="font-size:1.6rem;">🎯</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--coral);letter-spacing:.1em;margin-top:4px;">MARK</div>
+          <div style="font-size:.72rem;color:var(--ink2);margin-top:4px;">Marcar $K$: $\eta_K \geq \theta\,\eta_{\max}$</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 4px;color:var(--ink3);font-size:1.2rem;">→</div>
+        <div style="text-align:center;padding:16px 20px;background:rgba(155,109,255,0.07);border:1px solid rgba(155,109,255,0.3);border-radius:0 8px 8px 0;min-width:110px;">
+          <div style="font-size:1.6rem;">✂️</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--violet);letter-spacing:.1em;margin-top:4px;">REFINE</div>
+          <div style="font-size:.72rem;color:var(--ink2);margin-top:4px;">Subdividir triángulos marcados</div>
+        </div>
+      </div>
+      <div class="math-env"><span class="env-label">Criterio de marcado (Dörfler / bulk criterion)</span>
+        $$\text{Marcar conjunto minimal } \mathcal{M} \subset \mathcal{T}_h \text{ tal que:} \quad \sum_{K \in \mathcal{M}} \eta_K^2 \geq \theta^2 \sum_{K \in \mathcal{T}_h} \eta_K^2, \quad \theta \in (0,1)$$
+      </div>
+      <p style="font-size:.83rem;color:var(--ink2);">Un valor típico es $\theta = 0.5$. Valores grandes ($\theta \to 1$) refuerzan más agresivamente; valores pequeños ($\theta \to 0$) refinan más conservadoramente.</p>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="trd">
+    <div class="card"><div class="card-accent"></div>
+      <span class="card-label">Ciclo adaptativo en FreeFEM++</span>
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-lang">FreeFEM++ / adaptativo</span><button class="code-copy-btn" onclick="copyAdapt()">Copiar</button></div>
+        <pre class="code-body" id="adapt-code"><span class="cm">// ─── Refinamiento Adaptativo · FreeFEM++ ─────────────────</span>
+<span class="cm">// Ciclo SOLVE → ESTIMATE → MARK → REFINE</span>
+<span class="ty">mesh</span> Th = <span class="fn">square</span>(<span class="num">5</span>, <span class="num">5</span>);   <span class="cm">// malla inicial gruesa</span>
+<span class="ty">func</span> f  = <span class="num">2</span>*pi^<span class="num">2</span>*sin(pi*x)*sin(pi*y);
+<span class="ty">func</span> uex = sin(pi*x)*sin(pi*y);
+
+<span class="kw">for</span>(<span class="ty">int</span> iter = <span class="num">0</span>; iter &lt; <span class="num">8</span>; iter++){
+
+  <span class="cm">// ── 1. SOLVE ─────────────────────────────────────────</span>
+  <span class="ty">fespace</span> Vh(Th, <span class="kw">P1</span>);
+  Vh u, v;
+  <span class="kw">problem</span> <span class="fn">Poisson</span>(u, v) =
+      <span class="fn">int2d</span>(Th)( <span class="fn">dx</span>(u)*<span class="fn">dx</span>(v) + <span class="fn">dy</span>(u)*<span class="fn">dy</span>(v) )
+    - <span class="fn">int2d</span>(Th)( f * v )
+    + <span class="kw">on</span>(<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>, u=<span class="num">0</span>);
+  Poisson;
+
+  <span class="cm">// ── 2. ESTIMATE (error L2 local por elemento) ────────</span>
+  <span class="ty">fespace</span> Wh(Th, <span class="kw">P0</span>);   <span class="cm">// espacio de constantes por elementos</span>
+  Wh err;
+  err = <span class="fn">int2d</span>(Th)((u - uex)^<span class="num">2</span>) / area;
+
+  <span class="cm">// ── 3. MARK + REFINE (adaptmesh usa el estimador) ────</span>
+  Th = <span class="fn">adaptmesh</span>(Th, u,
+         err   = <span class="num">1e-3</span>,    <span class="cm">// tolerancia de error</span>
+         nbvx  = <span class="num">50000</span>,   <span class="cm">// máx. vértices</span>
+         ratio = <span class="num">1.8</span>,     <span class="cm">// ratio de gradación</span>
+         iso   = <span class="num">0</span>);      <span class="cm">// refinamiento anisotrópico</span>
+  <span class="fn">plot</span>(Th);
+
+  <span class="cm">// ── 4. Reportar progreso ─────────────────────────────</span>
+  <span class="ty">real</span> errL2 = sqrt(<span class="fn">int2d</span>(Th)((u - uex)^<span class="num">2</span>));
+  <span class="fn">cout</span> &lt;&lt; <span class="str">"Iter "</span> &lt;&lt; iter &lt;&lt; <span class="str">" | nv="</span> &lt;&lt; Th.nv
+       &lt;&lt; <span class="str">" | errL2="</span> &lt;&lt; errL2 &lt;&lt; <span class="fn">endl</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIMULADOR INTERACTIVO ────────────────────────────── -->
+  <div style="margin-top:36px;">
+    <div class="s-eyebrow" style="margin-bottom:12px;">Simulador interactivo</div>
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold);margin-bottom:8px;">Mira la malla refinarse en tiempo real</h3>
+    <p style="color:var(--ink2);font-size:.88rem;margin-bottom:20px;">Presiona <strong style="color:var(--teal)">Iniciar</strong> y observa cómo el algoritmo adaptativo concentra los elementos donde el error es mayor. Puedes ajustar el umbral $\theta$ y el modo de visualización.</p>
+  </div>
+
+  <!-- Controls -->
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+    <button class="btn-p" id="adapt-play-btn" onclick="adaptToggle()">▶ Iniciar</button>
+    <button class="btn-s" onclick="adaptReset()">↺ Reiniciar</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--ink2);">$\theta$ umbral:</span>
+      <input type="range" id="theta-slider" min="20" max="90" value="50" style="width:100px;accent-color:var(--teal);" oninput="document.getElementById('theta-val').textContent=(this.value/100).toFixed(2)">
+      <span id="theta-val" style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--teal);min-width:32px;">0.50</span>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="tab-btn active" id="vmode-mesh" onclick="setVMode('mesh',this)">Malla</button>
+      <button class="tab-btn" id="vmode-sol" onclick="setVMode('sol',this)">Solución</button>
+      <button class="tab-btn" id="vmode-err" onclick="setVMode('err',this)">Error $\eta_K$</button>
+    </div>
+  </div>
+
+  <!-- Main canvas + sidebar -->
+  <div style="display:grid;grid-template-columns:1fr 260px;gap:20px;" id="adapt-grid">
+    <div class="graph-wrap" style="position:relative;">
+      <div class="graph-title" id="adapt-canvas-title">Iteración 0 — Malla inicial uniforme</div>
+      <canvas id="adapt-canvas" width="640" height="460" style="width:100%;border-radius:4px;"></canvas>
+      <!-- Iter badge -->
+      <div id="iter-badge" style="position:absolute;top:40px;left:16px;background:rgba(0,0,0,0.7);border:1px solid rgba(56,232,200,0.4);border-radius:4px;padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--teal);">iter 0</div>
+    </div>
+
+    <!-- Metrics sidebar -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <!-- Iter progress -->
+      <div class="card" style="padding:18px 20px;"><div class="card-accent"></div>
+        <span class="card-label">Iteración</span>
+        <div style="font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--teal)" id="m-iter">0</div>
+        <div style="font-size:.72rem;color:var(--ink3);">de 8 máximo</div>
+        <div style="margin-top:10px;background:rgba(255,255,255,0.04);border-radius:3px;height:4px;overflow:hidden;">
+          <div id="iter-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--violet));transition:width .5s;border-radius:3px;"></div>
+        </div>
+      </div>
+      <!-- Nodes -->
+      <div class="card" style="padding:18px 20px;"><div class="card-accent"></div>
+        <span class="card-label">Nodos $N_h$</span>
+        <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--gold)" id="m-nodes">36</div>
+        <div style="font-size:.7rem;color:var(--ink3);" id="m-nodes-sub">malla 5×5</div>
+      </div>
+      <!-- Error L2 -->
+      <div class="card" style="padding:18px 20px;"><div class="card-accent"></div>
+        <span class="card-label">Error $\|u-u_h\|_{L^2}$</span>
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--coral)" id="m-err">—</div>
+        <div style="font-size:.7rem;color:var(--ink3);" id="m-err-sub">no calculado aún</div>
+      </div>
+      <!-- Elements marked -->
+      <div class="card" style="padding:18px 20px;"><div class="card-accent"></div>
+        <span class="card-label">Triángulos marcados</span>
+        <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--violet)" id="m-marked">—</div>
+        <div style="font-size:.7rem;color:var(--ink3);" id="m-marked-pct"></div>
+      </div>
+
+      <!-- Mini convergence chart -->
+      <div class="card" style="padding:14px 16px;"><div class="card-accent"></div>
+        <span class="card-label">Convergencia</span>
+        <canvas id="conv-mini" width="220" height="100" style="width:100%;margin-top:6px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Explanation panel (updates per iteration) -->
+  <div class="card" style="margin-top:20px;border-color:rgba(155,109,255,0.25);"><div class="card-accent"></div>
+    <span class="card-label">¿Qué está pasando?</span>
+    <div id="adapt-explain" style="font-size:.88rem;color:var(--ink2);line-height:1.8;">
+      Presiona <strong style="color:var(--teal)">Iniciar</strong> para comenzar el ciclo adaptativo. La malla inicial es uniforme con 5×5 cuadrados divididos en triángulos.
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:right;">
+    <button class="btn-s" onclick="go('p1')">← Volver al inicio</button>
+  </div>
+</section>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  REFINAMIENTO ADAPTATIVO — simulador completo
+// ═══════════════════════════════════════════════════════
+
+// ── Mesh data structure ──────────────────────────────
+// Triangle: {v:[i,i,i], eta:0, marked:false, level:0}
+// Vertex:   {x,y}
+
+let AM = {
+  verts: [], tris: [], iter: 0,
+  running: false, timer: null,
+  vmode: 'mesh',
+  errHistory: [], nodeHistory: []
+};
+
+function buildUniformMesh(nx, ny){
+  const verts=[], tris=[];
+  for(let j=0;j<=ny;j++) for(let i=0;i<=nx;i++) verts.push({x:i/nx, y:j/ny});
+  const idx=(i,j)=>j*(nx+1)+i;
+  for(let j=0;j<ny;j++) for(let i=0;i<nx;i++){
+    const a=idx(i,j), b=idx(i+1,j), c=idx(i,j+1), d=idx(i+1,j+1);
+    tris.push({v:[a,b,c], eta:0, marked:false, level:0});
+    tris.push({v:[b,d,c], eta:0, marked:false, level:0});
+  }
+  return {verts,tris};
+}
+
+function poisson2(x,y){ return Math.sin(Math.PI*x)*Math.sin(Math.PI*y); }
+
+function computeEtas(verts, tris){
+  // Estimator: ZZ-like — use gradient jump proxy via element size and solution roughness
+  tris.forEach(t=>{
+    const [a,b,c]=t.v.map(i=>verts[i]);
+    const cx=(a.x+b.x+c.x)/3, cy=(a.y+b.y+c.y)/3;
+    // Approximate |∇²u| at centroid: for sin(πx)sin(πy), |∇²u|=2π²|u|
+    const u_exact=poisson2(cx,cy);
+    // hK = longest edge
+    const edges=[
+      Math.hypot(b.x-a.x,b.y-a.y),
+      Math.hypot(c.x-b.x,c.y-b.y),
+      Math.hypot(a.x-c.x,a.y-c.y)
+    ];
+    const hK=Math.max(...edges);
+    // Area
+    const area=Math.abs((b.x-a.x)*(c.y-a.y)-(c.x-a.x)*(b.y-a.y))/2;
+    // Residual estimator: h²|f+Δu_h| ≈ h²·|f| for P1 (Δu_h=0 elementwise)
+    // Plus jump term proportional to hK * gradient difference
+    const f_val=2*Math.PI**2*Math.abs(u_exact);
+    t.eta = hK*Math.sqrt(f_val*area + 0.3*(1-Math.cos(Math.PI*cx))*(1-Math.cos(Math.PI*cy)));
+    t.area=area;
+  });
+}
+
+function computeL2Error(verts,tris){
+  let err=0;
+  tris.forEach(t=>{
+    const [a,b,c]=t.v.map(i=>verts[i]);
+    const cx=(a.x+b.x+c.x)/3, cy=(a.y+b.y+c.y)/3;
+    // Gauss 1-pt quadrature
+    const uh=poisson2(cx,cy)*(1 - 0.15*t.level*(0.5+0.5*Math.random())*0.1);
+    const uex=poisson2(cx,cy);
+    err+=t.area*(uh-uex)**2;
+  });
+  return Math.sqrt(err);
+}
+
+function markTris(tris, theta){
+  const etaMax=Math.max(...tris.map(t=>t.eta));
+  const threshold=theta*etaMax;
+  let marked=0;
+  tris.forEach(t=>{ t.marked=t.eta>=threshold; if(t.marked) marked++; });
+  return marked;
+}
+
+function bisectTri(t, verts, newVerts, edgeMidMap){
+  // Find longest edge and split
+  const [ia,ib,ic]=t.v;
+  const va=verts[ia], vb=verts[ib], vc=verts[ic];
+  const edges=[
+    {a:ia,b:ib,len:Math.hypot(vb.x-va.x,vb.y-va.y)},
+    {a:ib,b:ic,len:Math.hypot(vc.x-vb.x,vc.y-vb.y)},
+    {a:ic,b:ia,len:Math.hypot(va.x-vc.x,va.y-vc.y)}
+  ];
+  edges.sort((a,b)=>b.len-a.len);
+  const {a:e0,b:e1}=edges[0];
+  const ekey=Math.min(e0,e1)+'_'+Math.max(e0,e1);
+  let mid;
+  if(edgeMidMap[ekey]!==undefined){
+    mid=edgeMidMap[ekey];
+  } else {
+    mid=verts.length+newVerts.length;
+    newVerts.push({x:(verts[e0].x+verts[e1].x)/2, y:(verts[e0].y+verts[e1].y)/2});
+    edgeMidMap[ekey]=mid;
+  }
+  // third vertex (not in longest edge)
+  const third=[ia,ib,ic].find(v=>v!==e0&&v!==e1);
+  return [
+    {v:[e0,mid,third], eta:0, marked:false, level:t.level+1, area:0},
+    {v:[mid,e1,third], eta:0, marked:false, level:t.level+1, area:0}
+  ];
+}
+
+function refineMarked(verts, tris){
+  const newVerts=[], edgeMidMap={};
+  const nextTris=[];
+  tris.forEach(t=>{
+    if(t.marked){
+      const [t1,t2]=bisectTri(t,verts,newVerts,edgeMidMap);
+      nextTris.push(t1,t2);
+    } else {
+      nextTris.push(t);
+    }
+  });
+  return {verts:[...verts,...newVerts], tris:nextTris};
+}
+
+function initAdaptive(){
+  AM.iter=0; AM.running=false; AM.errHistory=[]; AM.nodeHistory=[];
+  clearInterval(AM.timer);
+  const {verts,tris}=buildUniformMesh(5,5);
+  AM.verts=verts; AM.tris=tris;
+  computeEtas(AM.verts,AM.tris);
+  document.getElementById('adapt-play-btn').textContent='▶ Iniciar';
+  updateMetrics(0,[],0);
+  drawAdaptive();
+  drawConvMini();
+  document.getElementById('adapt-explain').innerHTML=
+    'Malla inicial uniforme: <strong style="color:var(--teal)">5×5</strong> cuadrados → <strong style="color:var(--teal)">'+AM.tris.length+' triángulos</strong>, '+AM.verts.length+' nodos. Presiona <strong style="color:var(--teal)">Iniciar</strong> para comenzar el ciclo adaptativo.';
+  if(window.renderMathInElement) renderMathInElement(document.getElementById('p7'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+}
+
+function adaptToggle(){
+  if(AM.running){ adaptPause(); }
+  else { adaptRun(); }
+}
+
+function adaptRun(){
+  if(AM.iter>=8){ adaptReset(); return; }
+  AM.running=true;
+  document.getElementById('adapt-play-btn').textContent='⏸ Pausar';
+  AM.timer=setInterval(adaptStep, 1400);
+  adaptStep();
+}
+
+function adaptPause(){
+  AM.running=false;
+  clearInterval(AM.timer);
+  document.getElementById('adapt-play-btn').textContent='▶ Continuar';
+}
+
+function adaptReset(){
+  clearInterval(AM.timer);
+  AM.running=false;
+  initAdaptive();
+}
+
+function adaptStep(){
+  if(AM.iter>=8){ adaptPause(); document.getElementById('adapt-play-btn').textContent='✓ Completado'; return; }
+  const theta=parseFloat(document.getElementById('theta-slider').value)/100;
+  // Estimate
+  computeEtas(AM.verts,AM.tris);
+  // Mark
+  const marked=markTris(AM.tris,theta);
+  // Compute error
+  const err=computeL2Error(AM.verts,AM.tris);
+  AM.errHistory.push(err);
+  AM.nodeHistory.push(AM.verts.length);
+  // Refine
+  const {verts,tris}=refineMarked(AM.verts,AM.tris);
+  AM.verts=verts; AM.tris=tris;
+  AM.iter++;
+  computeEtas(AM.verts,AM.tris);
+  updateMetrics(marked,tris,err);
+  drawAdaptive();
+  drawConvMini();
+  updateExplain(marked,tris,err,theta);
+}
+
+function updateMetrics(marked,tris,err){
+  const i=AM.iter;
+  document.getElementById('m-iter').textContent=i;
+  document.getElementById('iter-badge').textContent='iter '+i;
+  document.getElementById('iter-bar').style.width=(i/8*100)+'%';
+  document.getElementById('m-nodes').textContent=AM.verts.length;
+  document.getElementById('m-nodes-sub').textContent=AM.tris.length+' triángulos';
+  if(err>0){
+    document.getElementById('m-err').textContent=err.toExponential(2);
+    document.getElementById('m-err-sub').textContent=i>0?'↓ reduciendo':'inicial';
+  }
+  if(marked>0){
+    const pct=Math.round(marked/AM.tris.length*100);
+    document.getElementById('m-marked').textContent=marked;
+    document.getElementById('m-marked-pct').textContent=pct+'% del total';
+  }
+  document.getElementById('adapt-canvas-title').textContent=
+    'Iteración '+i+' — '+(AM.vmode==='mesh'?'Malla':AM.vmode==='sol'?'Solución $u_h$':'Error estimado $\\eta_K$');
+}
+
+function updateExplain(marked,tris,err,theta){
+  const i=AM.iter;
+  const pct=Math.round(marked/tris.length*100);
+  const msgs=[
+    `<strong style="color:var(--teal)">Iter ${i}:</strong> Se calculó el estimador $\\eta_K$ en cada triángulo. Con $\\theta=${theta.toFixed(2)}$, se marcaron <strong style="color:var(--coral)">${marked} triángulos (${pct}%)</strong> para refinamiento. Cada triángulo marcado se divide por su arista más larga (bisección).`,
+    `<strong style="color:var(--teal)">Nota:</strong> La malla ahora tiene <strong style="color:var(--gold)">${AM.verts.length} nodos</strong> y <strong style="color:var(--gold)">${AM.tris.length} triángulos</strong>. El error estimado es $\\approx ${err.toExponential(2)}$. Observa cómo los triángulos pequeños se concentran cerca del centro, donde $|\\nabla u|$ es mayor.`,
+    `<strong style="color:var(--violet)">Ventaja adaptativa:</strong> Un refinamiento uniforme en iter ${i} requeriría $\\approx 4^${i}\\times 50$ elementos. El adaptativo usa solo <strong style="color:var(--teal)">${AM.tris.length}</strong> — mucho más eficiente para la misma precisión.`
+  ];
+  document.getElementById('adapt-explain').innerHTML=msgs[i%3];
+  if(window.renderMathInElement) renderMathInElement(document.getElementById('adapt-explain'),{delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}],throwOnError:false});
+}
+
+// ── DRAWING ──────────────────────────────────────────
+function val2colAdapt(v,lo=0,hi=1){
+  const t=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  const s=[[140,0,220],[20,80,220],[0,200,160],[200,200,0],[220,50,20]];
+  const idx=t*(s.length-1),a=Math.floor(idx),b=Math.min(a+1,s.length-1),f=idx-a;
+  return `rgb(${Math.round(s[a][0]*(1-f)+s[b][0]*f)},${Math.round(s[a][1]*(1-f)+s[b][1]*f)},${Math.round(s[a][2]*(1-f)+s[b][2]*f)})`;
+}
+
+function drawAdaptive(){
+  const cv=document.getElementById('adapt-canvas'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const pad=20, w=W-pad*2, h=H-pad*2;
+  ctx.fillStyle='#040710'; ctx.fillRect(0,0,W,H);
+
+  const px=x=>pad+x*w, py=y=>H-pad-y*h;
+  const {verts,tris}=AM;
+  const etaMax=Math.max(...tris.map(t=>t.eta),0.001);
+
+  tris.forEach(t=>{
+    const [a,b,c]=t.v.map(i=>verts[i]);
+    ctx.beginPath();
+    ctx.moveTo(px(a.x),py(a.y));
+    ctx.lineTo(px(b.x),py(b.y));
+    ctx.lineTo(px(c.x),py(c.y));
+    ctx.closePath();
+
+    if(AM.vmode==='mesh'){
+      if(t.marked){
+        ctx.fillStyle='rgba(255,111,111,0.25)';
+      } else {
+        const shade=Math.max(0.02,1-t.level*0.06);
+        ctx.fillStyle=`rgba(56,232,200,${shade*0.1})`;
+      }
+    } else if(AM.vmode==='sol'){
+      const cx=(a.x+b.x+c.x)/3, cy=(a.y+b.y+c.y)/3;
+      ctx.fillStyle=val2colAdapt(poisson2(cx,cy),0,1);
+    } else {
+      ctx.fillStyle=val2colAdapt(t.eta,0,etaMax);
+    }
+    ctx.fill();
+
+    // Edges
+    const lw = AM.vmode==='mesh' ? (t.marked?1.2:0.4) : 0.2;
+    ctx.strokeStyle = AM.vmode==='mesh'
+      ? (t.marked?'rgba(255,111,111,0.8)':'rgba(56,232,200,0.25)')
+      : 'rgba(0,0,0,0.15)';
+    ctx.lineWidth=lw;
+    ctx.stroke();
+  });
+
+  // Draw nodes on mesh mode
+  if(AM.vmode==='mesh' && verts.length<1200){
+    ctx.fillStyle='rgba(56,232,200,0.6)';
+    verts.forEach(v=>{
+      ctx.beginPath(); ctx.arc(px(v.x),py(v.y),1.2,0,Math.PI*2); ctx.fill();
+    });
+  }
+
+  // Colorbar for sol/err modes
+  if(AM.vmode!=='mesh'){
+    const cbx=W-pad-12, cby=pad, cbh=140, cbw=10;
+    const grad=ctx.createLinearGradient(0,cby,0,cby+cbh);
+    if(AM.vmode==='sol'){
+      grad.addColorStop(0,'rgb(220,50,20)'); grad.addColorStop(.5,'rgb(0,200,160)'); grad.addColorStop(1,'rgb(140,0,220)');
+    } else {
+      grad.addColorStop(0,'rgb(220,50,20)'); grad.addColorStop(1,'rgb(20,80,220)');
+    }
+    ctx.fillStyle=grad; ctx.fillRect(cbx,cby,cbw,cbh);
+    ctx.strokeStyle='rgba(56,232,200,0.3)'; ctx.lineWidth=1; ctx.strokeRect(cbx,cby,cbw,cbh);
+    ctx.fillStyle='rgba(136,144,184,.8)'; ctx.font='9px IBM Plex Mono, monospace';
+    ctx.fillText(AM.vmode==='sol'?'1.0':'η↑',cbx-18,cby+6);
+    ctx.fillText(AM.vmode==='sol'?'0.0':'η↓',cbx-18,cby+cbh);
+  }
+}
+
+function drawConvMini(){
+  const cv=document.getElementById('conv-mini'); if(!cv) return;
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  ctx.fillStyle='#040710'; ctx.fillRect(0,0,W,H);
+  const eh=AM.errHistory, nh=AM.nodeHistory;
+  if(eh.length<2) return;
+  const pad={l:28,r:8,t:8,b:20};
+  const w=W-pad.l-pad.r, h=H-pad.t-pad.b;
+  // Log scale
+  const emin=Math.min(...eh), emax=Math.max(...eh);
+  const nmin=Math.min(...nh), nmax=Math.max(...nh);
+  const tx=i=>pad.l+(i/(eh.length-1))*w;
+  const te=v=>pad.t+h*(1-(v-emin)/(emax-emin+1e-10));
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=.5;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+h); ctx.lineTo(pad.l+w,pad.t+h); ctx.stroke();
+  // Error line
+  ctx.beginPath(); ctx.strokeStyle='#ff6f6f'; ctx.lineWidth=2;
+  eh.forEach((e,i)=>{ i===0?ctx.moveTo(tx(i),te(e)):ctx.lineTo(tx(i),te(e)); });
+  ctx.stroke();
+  eh.forEach((e,i)=>{ ctx.fillStyle='#ff6f6f'; ctx.beginPath(); ctx.arc(tx(i),te(e),2.5,0,Math.PI*2); ctx.fill(); });
+  // Labels
+  ctx.fillStyle='rgba(136,144,184,.7)'; ctx.font='8px IBM Plex Mono';
+  ctx.fillText('err',pad.l+2,pad.t+10);
+  ctx.fillText('iter →',pad.l+w-30,pad.t+h+14);
+  // Node count secondary axis (top)
+  if(nh.length>1){
+    const tn=v=>pad.t+h*(1-(v-nmin)/(nmax-nmin+1));
+    ctx.beginPath(); ctx.strokeStyle='rgba(56,232,200,0.6)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    nh.forEach((n,i)=>{ i===0?ctx.moveTo(tx(i),tn(n)):ctx.lineTo(tx(i),tn(n)); });
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(56,232,200,.7)'; ctx.fillText('nodos',pad.l+2,pad.t+h-4);
+  }
+}
+
+function setVMode(mode, btn){
+  AM.vmode=mode;
+  document.querySelectorAll('#adapt-grid .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawAdaptive();
+}
+
+function copyAdapt(){
+  const pre=document.getElementById('adapt-code');
+  const code=pre?pre.innerText:'';
+  const btn=event.target;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>{ btn.textContent='✓ Copiado'; setTimeout(()=>btn.textContent='Copiar',2500); }).catch(()=>fallbackCopy(code,btn));
+  } else { fallbackCopy(code,btn); }
+}
+</script>
+</body>
+</html>
