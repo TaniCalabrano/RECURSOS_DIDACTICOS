@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLACKPINK Math Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#FF007F;--hot:#FF4DA6;--black:#080808;
+  --gold:#FFD700;--green:#00E676;--red:#FF1744;
+  --jennie:#FF1493;--jisoo:#00BFFF;--lisa:#FFD700;--rose:#FF69B4;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Nunito',sans-serif;background:var(--black);color:#fff;min-height:100vh;overflow-x:hidden;}
+
+.bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 5%,rgba(255,0,127,.22) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 95%,rgba(255,0,127,.15) 0%,transparent 55%),
+    #080808;}
+.bg::after{content:'';position:fixed;inset:0;
+  background-image:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,0,127,.03) 30px,rgba(255,0,127,.03) 32px);}
+
+#particles{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
+.p{position:absolute;border-radius:50%;animation:pFloat linear infinite;opacity:0;}
+@keyframes pFloat{0%{transform:translateY(110vh) scale(0);opacity:0;}10%{opacity:.6;}90%{opacity:.3;}100%{transform:translateY(-10vh) scale(1.2);opacity:0;}}
+
+.wrap{position:relative;z-index:2;max-width:820px;margin:0 auto;padding:16px 14px 80px;}
+
+/* ── MUSIC BAR ── */
+.music-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(10,0,8,.92);
+  border-top:1px solid rgba(255,0,127,.25);
+  backdrop-filter:blur(12px);
+  padding:10px 20px;
+  display:flex;align-items:center;gap:12px;
+  max-width:820px;margin:0 auto;
+  left:50%;transform:translateX(-50%);
+  border-radius:20px 20px 0 0;
+}
+.music-note{font-size:1.1rem;animation:noteBounce .5s ease-in-out infinite alternate;}
+@keyframes noteBounce{from{transform:scale(1);}to{transform:scale(1.3) rotate(10deg);}}
+.music-info{flex:1;}
+.music-title{font-size:.7rem;font-weight:800;letter-spacing:2px;color:var(--pink);}
+.music-sub{font-size:.6rem;color:rgba(255,255,255,.35);letter-spacing:1px;}
+.music-viz{display:flex;align-items:flex-end;gap:2px;height:22px;}
+.music-bar-el{width:4px;background:linear-gradient(180deg,var(--pink),var(--gold));border-radius:2px 2px 0 0;animation:barDance .4s ease-in-out infinite alternate;}
+@keyframes barDance{from{height:4px;}to{height:20px;}}
+.music-btns{display:flex;gap:8px;align-items:center;}
+.m-btn{background:rgba(255,0,127,.15);border:1px solid rgba(255,0,127,.3);border-radius:99px;
+  padding:6px 14px;color:#fff;font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:800;
+  cursor:pointer;transition:all .18s;}
+.m-btn:hover{background:rgba(255,0,127,.3);}
+.m-btn.active{background:var(--pink);border-color:var(--pink);}
+.vol-wrap{display:flex;align-items:center;gap:6px;}
+.vol-icon{font-size:.9rem;cursor:pointer;}
+input[type=range]{-webkit-appearance:none;width:70px;height:3px;border-radius:99px;
+  background:rgba(255,255,255,.15);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
+  border-radius:50%;background:var(--pink);cursor:pointer;}
+
+/* ── HEADER ── */
+.site-header{text-align:center;padding:10px 0 16px;}
+.bp-logo{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:6px;
+  background:var(--pink);color:#000;padding:5px 24px;border-radius:99px;
+  display:inline-block;margin-bottom:10px;box-shadow:0 0 22px rgba(255,0,127,.7);}
+.site-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.6rem,9vw,4.8rem);
+  letter-spacing:3px;line-height:.95;
+  background:linear-gradient(135deg,#fff 0%,var(--hot) 45%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,0,127,.5));}
+.site-sub{color:rgba(255,255,255,.5);font-size:.9rem;font-weight:700;margin-top:6px;}
+
+/* ── SCREENS ── */
+.screen{display:none;}
+.screen.active{display:block;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── NAV TABS (main menu) ── */
+.nav-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;}
+.nav-tab{
+  flex:1;min-width:120px;max-width:180px;
+  padding:14px 10px;border-radius:18px;border:2px solid rgba(255,0,127,.2);
+  background:rgba(255,255,255,.03);color:#fff;cursor:pointer;text-align:center;
+  transition:all .2s;font-family:'Nunito',sans-serif;
+}
+.nav-tab:hover{border-color:var(--pink);background:rgba(255,0,127,.08);}
+.nav-tab.active{border-color:var(--pink);background:rgba(255,0,127,.18);
+  box-shadow:0 0 22px rgba(255,0,127,.3);}
+.nav-tab .t-icon{font-size:1.8rem;display:block;margin-bottom:5px;}
+.nav-tab .t-name{font-weight:900;font-size:.88rem;}
+.nav-tab .t-desc{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:2px;}
+
+/* ── MEMBERS GRID ── */
+.members-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 22px;}
+@media(max-width:500px){.members-grid{grid-template-columns:repeat(2,1fr);}}
+.member-card{border-radius:20px;padding:12px 8px 14px;text-align:center;cursor:pointer;
+  border:2px solid transparent;transition:all .25s;position:relative;overflow:hidden;
+  background:rgba(255,255,255,.04);}
+.member-card:hover,.member-card.selected{transform:translateY(-6px) scale(1.03);}
+.member-card.jennie{border-color:rgba(255,20,147,.35);}
+.member-card.jennie:hover,.member-card.jennie.selected{border-color:var(--jennie);box-shadow:0 12px 32px rgba(255,20,147,.5);}
+.member-card.jisoo{border-color:rgba(0,191,255,.35);}
+.member-card.jisoo:hover,.member-card.jisoo.selected{border-color:var(--jisoo);box-shadow:0 12px 32px rgba(0,191,255,.5);}
+.member-card.lisa{border-color:rgba(255,215,0,.35);}
+.member-card.lisa:hover,.member-card.lisa.selected{border-color:var(--lisa);box-shadow:0 12px 32px rgba(255,215,0,.5);}
+.member-card.rose{border-color:rgba(255,105,180,.35);}
+.member-card.rose:hover,.member-card.rose.selected{border-color:var(--rose);box-shadow:0 12px 32px rgba(255,105,180,.5);}
+.member-card svg{width:100%;max-width:100px;display:block;margin:0 auto 8px;}
+.member-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;}
+.member-role{font-size:.65rem;letter-spacing:2px;opacity:.55;text-transform:uppercase;}
+.selected-crown{position:absolute;top:6px;right:8px;font-size:1rem;display:none;}
+.member-card.selected .selected-crown{display:block;}
+
+/* ── SHARED SECTION STYLES ── */
+.section-label{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);text-align:center;margin-bottom:10px;}
+.table-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px;}
+.t-btn{width:46px;height:46px;border-radius:13px;border:1.5px solid rgba(255,0,127,.25);
+  background:rgba(255,0,127,.06);color:rgba(255,255,255,.7);font-family:'Nunito',sans-serif;
+  font-size:1rem;font-weight:900;cursor:pointer;transition:all .18s;}
+.t-btn:hover{border-color:var(--pink);color:#fff;background:rgba(255,0,127,.18);}
+.t-btn.active{background:var(--pink);border-color:var(--pink);color:#fff;
+  box-shadow:0 0 16px rgba(255,0,127,.6);transform:scale(1.1);}
+
+.btn-play{display:block;width:100%;max-width:320px;margin:0 auto;
+  padding:16px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,var(--pink),#a0004d);
+  color:#fff;font-family:'Nunito',sans-serif;font-size:1.15rem;font-weight:900;
+  cursor:pointer;box-shadow:0 6px 28px rgba(255,0,127,.5);transition:all .2s;}
+.btn-play:hover{transform:translateY(-3px);box-shadow:0 10px 36px rgba(255,0,127,.65);}
+
+/* ── LEARN ── */
+.learn-header{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.04);
+  border-radius:20px;padding:14px 18px;margin-bottom:18px;border:1px solid rgba(255,0,127,.15);}
+.learn-header svg{width:70px;flex-shrink:0;}
+.learn-header-text h2{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:2px;}
+.learn-header-text p{font-size:.82rem;color:rgba(255,255,255,.5);margin-top:2px;}
+.table-full{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:22px;}
+@media(max-width:420px){.table-full{grid-template-columns:1fr;}}
+.table-row{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.04);border-radius:14px;padding:11px 16px;
+  border-left:3px solid var(--pink);font-size:1.05rem;font-weight:800;
+  animation:slideIn .3s ease both;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-15px);}to{opacity:1;transform:translateX(0);}}
+.table-row .eq{font-size:1.4rem;color:var(--gold);font-family:'Bebas Neue',sans-serif;}
+
+/* ── GAME HUD ── */
+.hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;margin-bottom:14px;}
+.hud-chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,0,127,.15);
+  border-radius:12px;padding:8px 14px;text-align:center;flex:1;min-width:70px;}
+.hud-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--pink);line-height:1;}
+.hud-lbl{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.hud-val.g{color:var(--gold);}
+.hud-val.gr{color:var(--green);}
+.prog-wrap{height:6px;background:rgba(255,255,255,.07);border-radius:99px;margin-bottom:14px;overflow:hidden;}
+.prog-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pink),var(--gold));
+  transition:width .4s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--pink);}
+
+/* ── ARENA ── */
+.arena{background:linear-gradient(145deg,#1e0018,#0f000a);
+  border:1px solid rgba(255,0,127,.2);border-radius:28px;
+  padding:22px 20px 24px;margin-bottom:14px;position:relative;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04);}
+.arena::before{content:'';position:absolute;top:-80px;right:-80px;width:250px;height:250px;
+  background:radial-gradient(circle,rgba(255,0,127,.1) 0%,transparent 70%);border-radius:50%;}
+.arena-char{position:absolute;right:-10px;bottom:0;width:130px;opacity:.18;pointer-events:none;filter:saturate(.5);}
+@media(min-width:500px){.arena-char{width:160px;opacity:.24;right:0;}}
+.combo{position:absolute;top:14px;right:14px;font-family:'Bebas Neue',sans-serif;
+  font-size:.95rem;letter-spacing:2px;padding:4px 12px;border-radius:99px;
+  background:linear-gradient(135deg,var(--gold),#e67e00);color:#000;display:none;animation:popIn .3s;}
+.combo.show{display:block;}
+@keyframes popIn{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:scale(1);}}
+
+.q-member{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;
+  border-radius:99px;font-size:.72rem;font-weight:800;letter-spacing:1.5px;margin-bottom:14px;}
+.q-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,12vw,5.5rem);line-height:1;
+  background:linear-gradient(135deg,#fff,var(--hot));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 14px rgba(255,0,127,.4));margin-bottom:8px;transition:all .25s;text-align:center;}
+.q-hint{font-size:.82rem;color:rgba(255,255,255,.3);text-align:center;margin-bottom:18px;}
+
+/* FILL MODE */
+.fill-area{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.fill-equation{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:rgba(255,255,255,.7);}
+.fill-input{width:100px;height:64px;border-radius:16px;border:2.5px solid rgba(255,0,127,.4);
+  background:rgba(255,0,127,.08);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:2.4rem;
+  text-align:center;outline:none;caret-color:var(--pink);transition:all .2s;}
+.fill-input:focus{border-color:var(--pink);box-shadow:0 0 18px rgba(255,0,127,.35);}
+.fill-input.ok{border-color:var(--green)!important;background:rgba(0,230,118,.1)!important;color:var(--green)!important;}
+.fill-input.bad{border-color:var(--red)!important;background:rgba(255,23,68,.1)!important;animation:shake .35s;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+.btn-check{display:block;width:100%;padding:15px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,var(--pink),#a0004d);color:#fff;
+  font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;
+  box-shadow:0 4px 18px rgba(255,0,127,.4);transition:all .18s;margin-bottom:12px;}
+.btn-check:hover{transform:translateY(-2px);}
+.btn-check:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* QUIZ MODE */
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.opt{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,0,127,.04));
+  border:1.5px solid rgba(255,0,127,.2);border-radius:18px;
+  padding:18px 10px;color:#fff;font-family:'Nunito',sans-serif;
+  font-size:1.5rem;font-weight:900;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.opt:hover:not(:disabled){border-color:var(--pink);transform:translateY(-3px);
+  box-shadow:0 8px 22px rgba(255,0,127,.3);}
+.opt.correct{background:linear-gradient(135deg,#003a1a,#00632a)!important;
+  border-color:var(--green)!important;box-shadow:0 0 22px rgba(0,230,118,.45)!important;transform:scale(1.05)!important;}
+.opt.wrong{background:linear-gradient(135deg,#3a0010,#5e0020)!important;
+  border-color:var(--red)!important;box-shadow:0 0 18px rgba(255,23,68,.4)!important;animation:shake .35s;}
+.opt:disabled{cursor:not-allowed;}
+
+.hint-row{text-align:center;margin-bottom:6px;}
+.btn-hint{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);
+  border-radius:99px;padding:6px 18px;color:var(--gold);font-family:'Nunito',sans-serif;
+  font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s;}
+.btn-hint:hover{background:rgba(255,215,0,.2);}
+.hint-box{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.2);
+  border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:.85rem;
+  color:rgba(255,255,255,.7);text-align:center;display:none;}
+.hint-box.show{display:block;animation:fadeIn .3s;}
+
+.feedback{min-height:38px;text-align:center;font-size:1rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:all .3s;}
+.feedback.ok{color:var(--green);}
+.feedback.bad{color:#ff6b6b;}
+
+/* ── PROBLEMS SECTION ── */
+.prob-header{
+  background:linear-gradient(135deg,#1e0018,#0f000a);
+  border:1px solid rgba(255,0,127,.2);border-radius:22px;
+  padding:18px 20px;margin-bottom:18px;
+  display:flex;align-items:center;gap:14px;
+}
+.prob-header svg{width:65px;flex-shrink:0;}
+.prob-header-text h2{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:2px;color:var(--gold);}
+.prob-header-text p{font-size:.8rem;color:rgba(255,255,255,.45);margin-top:3px;}
+
+.prob-hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;}
+.prob-hud-chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,0,127,.15);
+  border-radius:12px;padding:8px 18px;text-align:center;}
+.prob-hud-val{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--pink);line-height:1;}
+.prob-hud-lbl{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+
+.problem-card{
+  background:linear-gradient(145deg,#1e0018,#0f000a);
+  border:1px solid rgba(255,0,127,.2);border-radius:28px;
+  padding:24px 22px;margin-bottom:14px;position:relative;overflow:hidden;
+}
+.problem-card::after{content:'';position:absolute;bottom:-40px;right:-40px;
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,215,0,.07) 0%,transparent 70%);}
+.prob-category{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:99px;font-size:.68rem;font-weight:800;
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;
+}
+.prob-illustration{font-size:3.5rem;text-align:center;margin-bottom:14px;
+  animation:float2 3s ease-in-out infinite;}
+@keyframes float2{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.prob-text{
+  font-size:1.05rem;line-height:1.7;font-weight:700;
+  color:rgba(255,255,255,.9);margin-bottom:18px;
+  background:rgba(255,255,255,.04);border-radius:14px;padding:14px 16px;
+  border-left:3px solid var(--pink);
+}
+.prob-text strong{color:var(--gold);}
+.prob-question{
+  font-size:1rem;font-weight:800;color:var(--hot);margin-bottom:16px;text-align:center;
+}
+.prob-step-hint{
+  background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
+  border-radius:14px;padding:12px 16px;margin-bottom:14px;
+  font-size:.85rem;color:rgba(255,255,255,.7);display:none;
+}
+.prob-step-hint.show{display:block;animation:fadeIn .3s;}
+.prob-step-hint .step{margin-bottom:5px;}
+.prob-step-hint .step:last-child{margin-bottom:0;}
+
+.prob-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.prob-opt{
+  background:rgba(255,255,255,.05);border:1.5px solid rgba(255,0,127,.2);
+  border-radius:18px;padding:16px 10px;color:#fff;
+  font-family:'Nunito',sans-serif;font-size:1.15rem;font-weight:900;
+  cursor:pointer;text-align:center;transition:all .2s;
+}
+.prob-opt:hover:not(:disabled){border-color:var(--pink);transform:translateY(-3px);
+  box-shadow:0 8px 22px rgba(255,0,127,.3);}
+.prob-opt.correct{background:linear-gradient(135deg,#003a1a,#00632a)!important;
+  border-color:var(--green)!important;box-shadow:0 0 22px rgba(0,230,118,.4)!important;transform:scale(1.04)!important;}
+.prob-opt.wrong{background:linear-gradient(135deg,#3a0010,#5e0020)!important;
+  border-color:var(--red)!important;animation:shake .35s;}
+.prob-opt:disabled{cursor:not-allowed;}
+
+.prob-feedback{min-height:42px;font-size:1rem;font-weight:800;text-align:center;
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;}
+.prob-feedback.ok{color:var(--green);}
+.prob-feedback.bad{color:#ff6b6b;}
+
+.prob-explanation{
+  background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);
+  border-radius:14px;padding:12px 16px;font-size:.88rem;
+  color:rgba(255,255,255,.8);display:none;
+  line-height:1.6;
+}
+.prob-explanation.show{display:block;animation:fadeIn .3s;}
+.prob-explanation strong{color:var(--green);}
+
+.prob-counter{
+  text-align:center;font-size:.75rem;letter-spacing:2px;
+  color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:16px;
+}
+.prob-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+
+/* ── RESULTS ── */
+.results-wrap{text-align:center;padding:10px 0 20px;}
+.res-char{width:150px;margin:0 auto 14px;display:block;filter:drop-shadow(0 0 30px rgba(255,0,127,.5));}
+.res-rank{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;
+  background:linear-gradient(135deg,#fff,var(--hot),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 16px rgba(255,0,127,.4));margin-bottom:4px;}
+.res-msg{color:rgba(255,255,255,.55);font-size:.9rem;margin-bottom:16px;}
+.res-big-score{font-family:'Bebas Neue',sans-serif;font-size:5rem;color:var(--gold);
+  line-height:1;filter:drop-shadow(0 0 18px rgba(255,215,0,.55));margin-bottom:6px;}
+.stars-row{font-size:2.5rem;letter-spacing:6px;margin-bottom:16px;}
+.res-stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;}
+.res-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:10px 18px;min-width:90px;text-align:center;}
+.res-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--pink);}
+.res-stat-lbl{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.btns-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-prim,.btn-sec{padding:13px 28px;border-radius:99px;font-family:'Nunito',sans-serif;
+  font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;border:none;
+  display:inline-flex;align-items:center;gap:6px;}
+.btn-prim{background:linear-gradient(135deg,var(--pink),#a0004d);color:#fff;box-shadow:0 4px 18px rgba(255,0,127,.4);}
+.btn-prim:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,0,127,.55);}
+.btn-sec{background:rgba(255,255,255,.06);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.12);}
+.btn-sec:hover{border-color:var(--pink);color:#fff;}
+
+.mode-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;}
+.mode-btn{flex:1;min-width:120px;max-width:180px;padding:14px 10px;border-radius:18px;
+  border:2px solid rgba(255,0,127,.2);background:rgba(255,255,255,.03);color:#fff;
+  cursor:pointer;text-align:center;transition:all .2s;}
+.mode-btn:hover{border-color:var(--pink);background:rgba(255,0,127,.1);}
+.mode-btn.active{border-color:var(--pink);background:rgba(255,0,127,.18);box-shadow:0 0 20px rgba(255,0,127,.3);}
+.mode-icon{font-size:1.8rem;display:block;margin-bottom:5px;}
+.mode-title{font-weight:900;font-size:.88rem;}
+.mode-desc{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:3px;}
+
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:rgba(30,0,20,.95);border:1px solid rgba(255,0,127,.4);border-radius:14px;
+  padding:12px 24px;font-weight:800;font-size:.95rem;z-index:999;
+  transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;
+  backdrop-filter:blur(10px);white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div id="particles"></div>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+  <div class="bp-logo">♦ BLACKPINK MATH ACADEMY ♦</div>
+  <h1 class="site-title">TABLAS DE<br>MULTIPLICAR</h1>
+  <p class="site-sub">Aprende con las chicas más poderosas del K-pop 💖</p>
+</header>
+
+<!-- ══ SCREEN: SPLASH ══ -->
+<div class="screen active" id="s-splash">
+  <p class="section-label" style="margin-bottom:12px">Elige tu integrante 👑</p>
+  <div class="members-grid" id="members-grid"></div>
+
+  <p class="section-label">¿Qué quieres hacer? 🎮</p>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="learn" onclick="setTab('learn')">
+      <span class="t-icon">📖</span>
+      <div class="t-name">Aprender</div>
+      <div class="t-desc">Lee la tabla completa</div>
+    </div>
+    <div class="nav-tab" data-tab="fill" onclick="setTab('fill')">
+      <span class="t-icon">✏️</span>
+      <div class="t-name">Completar</div>
+      <div class="t-desc">Escribe la respuesta</div>
+    </div>
+    <div class="nav-tab" data-tab="quiz" onclick="setTab('quiz')">
+      <span class="t-icon">⚡</span>
+      <div class="t-name">Quiz</div>
+      <div class="t-desc">4 opciones rápidas</div>
+    </div>
+    <div class="nav-tab" data-tab="problems" onclick="setTab('problems')">
+      <span class="t-icon">🧩</span>
+      <div class="t-name">Problemas</div>
+      <div class="t-desc">Situaciones reales</div>
+    </div>
+  </div>
+
+  <div id="table-selector-wrap">
+    <p class="section-label">Elige la tabla 🔢</p>
+    <div class="table-grid" id="tbl-grid"></div>
+  </div>
+
+  <button class="btn-play" onclick="startFlow()">▶ &nbsp;¡EMPEZAR!</button>
+</div>
+
+<!-- ══ SCREEN: LEARN ══ -->
+<div class="screen" id="s-learn">
+  <div class="learn-header">
+    <svg id="learn-char" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="learn-header-text">
+      <h2 id="learn-title">Tabla del 3</h2>
+      <p id="learn-sub">¡Jennie te enseña! Lee y memoriza 🧠</p>
+    </div>
+  </div>
+  <div class="table-full" id="table-full"></div>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px;">
+    <button class="btn-prim" onclick="goToGame()">🎮 &nbsp;¡Ahora a practicar!</button>
+    <button class="btn-sec" onclick="goSplash()">← Menú</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN: GAME ══ -->
+<div class="screen" id="s-game">
+  <div class="hud">
+    <div class="hud-chip"><div class="hud-val" id="h-pts">0</div><div class="hud-lbl">Puntos</div></div>
+    <div class="hud-chip"><div class="hud-val gr" id="h-ok">0</div><div class="hud-lbl">✅ Bien</div></div>
+    <div class="hud-chip"><div class="hud-val" style="color:#ff6b6b" id="h-bad">0</div><div class="hud-lbl">❌ Mal</div></div>
+    <div class="hud-chip"><div class="hud-val g" id="h-str">0</div><div class="hud-lbl">🔥 Racha</div></div>
+    <div class="hud-chip"><div class="hud-val" id="h-left">12</div><div class="hud-lbl">Quedan</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+  <div class="arena">
+    <svg class="arena-char" id="arena-char" viewBox="0 0 100 130"></svg>
+    <div class="combo" id="combo">🔥 COMBO x<span id="combo-n">2</span></div>
+    <div class="q-member" id="q-member">💗 Jennie pregunta</div>
+    <div class="q-text" id="q-text">5 × 4 =</div>
+    <div class="q-hint" id="q-hint">¿Cuánto es el resultado?</div>
+    <div id="fill-mode" style="display:none">
+      <div class="fill-area">
+        <div class="fill-equation" id="fill-eq">5 × 4 =</div>
+        <input class="fill-input" id="fill-input" type="number" min="0" max="999" placeholder="?">
+      </div>
+      <button class="btn-check" id="btn-check" onclick="checkFill()">✅ &nbsp;Comprobar respuesta</button>
+    </div>
+    <div id="quiz-mode" style="display:none">
+      <div class="hint-row"><button class="btn-hint" id="hint-btn" onclick="showHint()">💡 Ver pista</button></div>
+      <div class="hint-box" id="hint-box"></div>
+      <div class="opts-grid" id="opts-grid"></div>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+  <button class="btn-sec" style="display:block;margin:0 auto;" onclick="goSplash()">← Menú</button>
+</div>
+
+<!-- ══ SCREEN: PROBLEMS ══ -->
+<div class="screen" id="s-problems">
+  <div class="prob-header">
+    <svg id="prob-char" viewBox="0 0 100 130"></svg>
+    <div class="prob-header-text">
+      <h2>Problemas 🧩</h2>
+      <p id="prob-header-sub">¡Resuelve situaciones de la vida real!</p>
+    </div>
+  </div>
+
+  <div class="prob-hud">
+    <div class="prob-hud-chip"><div class="prob-hud-val" id="pb-pts">0</div><div class="prob-hud-lbl">Puntos</div></div>
+    <div class="prob-hud-chip"><div class="prob-hud-val gr" id="pb-ok">0</div><div class="prob-hud-lbl">✅ Correctas</div></div>
+    <div class="prob-hud-chip"><div class="prob-hud-val" style="color:#ff6b6b" id="pb-bad">0</div><div class="prob-hud-lbl">❌ Incorrectas</div></div>
+  </div>
+
+  <div class="prob-counter" id="prob-counter">Problema 1 de 6</div>
+  <div class="prog-wrap"><div class="prog-bar" id="prob-prog" style="width:0%"></div></div>
+
+  <div class="problem-card" id="problem-card">
+    <div class="prob-category" id="prob-cat"></div>
+    <div class="prob-illustration" id="prob-illus">🎵</div>
+    <div class="prob-text" id="prob-text"></div>
+    <div class="prob-question" id="prob-question"></div>
+    <div class="hint-row">
+      <button class="btn-hint" id="prob-hint-btn" onclick="showProbHint()">💡 ¿Cómo lo resuelvo?</button>
+    </div>
+    <div class="prob-step-hint" id="prob-step-hint"></div>
+    <div class="prob-opts" id="prob-opts"></div>
+    <div class="prob-feedback" id="prob-feedback"></div>
+    <div class="prob-explanation" id="prob-explanation"></div>
+  </div>
+
+  <div class="prob-nav">
+    <button class="btn-prim" id="prob-next-btn" onclick="nextProblem()" style="display:none">➡ Siguiente problema</button>
+    <button class="btn-sec" onclick="goSplash()">← Menú</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN: RESULTS (game) ══ -->
+<div class="screen" id="s-results">
+  <div class="results-wrap">
+    <svg class="res-char" id="res-char" viewBox="0 0 100 130"></svg>
+    <div class="res-rank" id="res-rank">¡PERFECTA!</div>
+    <div class="stars-row" id="res-stars">⭐⭐⭐</div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-big-score" id="res-score">0</div>
+    <div class="res-stats">
+      <div class="res-stat"><div class="res-stat-val" id="rs-ok">0</div><div class="res-stat-lbl">Correctas</div></div>
+      <div class="res-stat"><div class="res-stat-val" id="rs-bad" style="color:#ff6b6b">0</div><div class="res-stat-lbl">Incorrectas</div></div>
+      <div class="res-stat"><div class="res-stat-val" id="rs-str" style="color:var(--gold)">0</div><div class="res-stat-lbl">Mejor racha</div></div>
+      <div class="res-stat"><div class="res-stat-val" id="rs-pts">0</div><div class="res-stat-lbl">Puntos</div></div>
+    </div>
+    <div class="btns-row">
+      <button class="btn-prim" onclick="replayGame()">🔄 Repetir</button>
+      <button class="btn-prim" onclick="goLearn()">📖 Repasar tabla</button>
+      <button class="btn-prim" onclick="goProblems()">🧩 Problemas</button>
+      <button class="btn-sec" onclick="goSplash()">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN: PROB RESULTS ══ -->
+<div class="screen" id="s-prob-results">
+  <div class="results-wrap">
+    <svg class="res-char" id="pres-char" viewBox="0 0 100 130"></svg>
+    <div class="res-rank" id="pres-rank">¡GENIAL!</div>
+    <div class="stars-row" id="pres-stars">⭐⭐⭐</div>
+    <div class="res-msg" id="pres-msg"></div>
+    <div class="res-big-score" id="pres-score">0</div>
+    <div class="res-stats">
+      <div class="res-stat"><div class="res-stat-val" id="prs-ok">0</div><div class="res-stat-lbl">Correctas</div></div>
+      <div class="res-stat"><div class="res-stat-val" id="prs-bad" style="color:#ff6b6b">0</div><div class="res-stat-lbl">Incorrectas</div></div>
+      <div class="res-stat"><div class="res-stat-val" id="prs-pts">0</div><div class="res-stat-lbl">Puntos</div></div>
+    </div>
+    <div class="btns-row">
+      <button class="btn-prim" onclick="restartProblems()">🔄 Más problemas</button>
+      <button class="btn-prim" onclick="goProblems()">🧩 Otros problemas</button>
+      <button class="btn-sec" onclick="goSplash()">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ══ MUSIC BAR ══ -->
+<div class="music-bar">
+  <span class="music-note" id="music-note">🎵</span>
+  <div class="music-info">
+    <div class="music-title" id="music-title">♦ K-POP BANGER — 138 BPM ♦</div>
+    <div class="music-sub" id="music-sub">Beat sintetizado · Carga tu MP3 👉</div>
+  </div>
+  <div class="music-viz" id="music-viz"></div>
+  <div class="music-btns">
+    <input type="file" id="mp3-input" accept="audio/*" style="display:none" onchange="loadMP3(this)">
+    <button class="m-btn" id="upload-btn" onclick="document.getElementById('mp3-input').click()" title="Cargar canción de BLACKPINK">📂 MP3</button>
+    <button class="m-btn active" id="play-btn" onclick="toggleMusic()">▶ Play</button>
+    <div class="vol-wrap">
+      <span class="vol-icon" onclick="toggleMute()">🔊</span>
+      <input type="range" id="vol-slider" min="0" max="100" value="40" oninput="setVolume(this.value)">
+    </div>
+  </div>
+</div>
+<audio id="mp3-player" loop style="display:none"></audio>
+
+<script>
+// ════════════════════════════════════════
+//  MUSIC ENGINE v2 — Energetic K-pop Beat
+//  Multi-layer: lead synth + bass + chords
+//  + punchy drums + arp + riser effects
+// ════════════════════════════════════════
+let audioCtx = null, masterGain = null, compressor = null;
+let musicPlaying = false, beatInterval = null, currentBeat = 0;
+
+// ── BPM & timing ──
+const BPM  = 138;   // energetic K-pop tempo
+const BEAT = 60 / BPM;
+const S16  = BEAT / 4; // 16th note
+
+// ── Scale: A minor pentatonic (A C D E G) — very K-pop ──
+// Two octaves of note frequencies we'll index into
+const SCALE = [
+  220.00, 261.63, 293.66, 329.63, 392.00,  // A3 C4 D4 E4 G4
+  440.00, 523.25, 587.33, 659.25, 783.99,  // A4 C5 D5 E5 G5
+  880.00, 1046.50                            // A5 C6
+];
+
+// ── 32-step patterns (2 bars) ──
+//  Kick: four-on-the-floor + extra syncopation
+const KICK  = [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
+               1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0];
+// Snare on 2 & 4 (beats 5,13,21,29 in 0-index 16th grid → positions 4,12,20,28)
+const SNARE = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0,
+               0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0];
+// Hi-hat: 8th notes + some 16ths for energy
+const HAT   = [1,0,1,0, 1,0,1,0, 1,1,1,0, 1,0,1,0,
+               1,0,1,0, 1,0,1,0, 1,0,1,1, 1,0,1,0];
+// Open hat on offbeats
+const OHAT  = [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0,
+               0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0];
+// Clap layer (on snare hits)
+const CLAP  = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0,
+               0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0];
+
+// Lead melody: index into SCALE, -1 = rest
+const LEAD  = [9,  -1,  7,  -1,  8,  -1,  9,   7,
+               6,  -1,  7,  -1,  5,   5,  -1,  -1,
+               9,  -1,  7,  -1,  8,  -1,  10,  -1,
+               7,  -1,  6,   4,  5,  -1,  -1,  -1];
+
+// Counter-melody arp (16th notes, higher register)
+const ARP   = [11, -1, 10, -1,  9, -1, 10, -1,
+               11, -1,  9, -1,  8, -1,  9, -1,
+               11, -1, 10, -1,  9, -1, 11, -1,
+               10, -1,  9, -1,  8,  7, -1, -1];
+
+// Bass line: index into SCALE (lower octave ×0.5)
+const BASS_P= [0,  -1,  0,  -1,  0,   2,  -1,  -1,
+               3,  -1,  3,  -1,  2,  -1,  -1,  -1,
+               0,  -1,  0,  -1,  0,   2,   4,  -1,
+               3,  -1,  2,  -1,  0,  -1,  -1,  -1];
+
+// Pad chords every 4 beats (chord root indices)
+const PADS  = [0, 3, 4, 2, 0, 3, 6, 4];
+
+// ── Audio helpers ──
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Compressor for loudness & punch
+  compressor = audioCtx.createDynamicsCompressor();
+  compressor.threshold.value = -18;
+  compressor.knee.value = 6;
+  compressor.ratio.value = 4;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.15;
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.42;
+  compressor.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+}
+
+function dst(){ return compressor; }  // everything routes through compressor
+
+function osc(freq, type, t, dur, vol, detune=0, pitchEnd=null){
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  if(detune) o.detune.value = detune;
+  if(pitchEnd) o.frequency.exponentialRampToValueAtTime(pitchEnd, t + dur);
+  g.gain.setValueAtTime(0.001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(dst());
+  o.start(t); o.stop(t + dur + 0.04);
+}
+
+function noise(t, dur, vol, hpFreq=200, lpFreq=18000){
+  const sr = audioCtx.sampleRate;
+  const len = Math.ceil(sr * (dur + 0.02));
+  const buf = audioCtx.createBuffer(1, len, sr);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hpFreq;
+  const lp = audioCtx.createBiquadFilter(); lp.type='lowpass';  lp.frequency.value=lpFreq;
+  const g  = audioCtx.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(dst());
+  src.start(t); src.stop(t + dur + 0.03);
+}
+
+// ── Instrument voices ──
+function kick(t){
+  // Body: pitched sine sweep
+  osc(55, 'sine', t, 0.45, 0.95, 0, 28);
+  // Click transient
+  noise(t, 0.012, 0.6, 100, 4000);
+  // Sub thump
+  osc(45, 'sine', t, 0.3, 0.5);
+}
+
+function snare(t){
+  // Tonal body (mid crack)
+  osc(200, 'triangle', t, 0.12, 0.4, 0, 80);
+  osc(180, 'sine',     t, 0.08, 0.3);
+  // Noise snap
+  noise(t, 0.14, 0.55, 1500, 12000);
+  // Noise tail
+  noise(t+0.01, 0.20, 0.18, 800, 6000);
+}
+
+function clap(t){
+  // Multiple noise bursts for that wide clap sound
+  for(let i=0;i<3;i++) noise(t + i*0.012, 0.08, 0.3, 1200, 10000);
+}
+
+function hat(t, vol=0.22){
+  noise(t, 0.035, vol, 9000, 18000);
+}
+
+function openHat(t){
+  noise(t, 0.18, 0.28, 8000, 16000);
+}
+
+function lead(freq, t){
+  if(!freq) return;
+  // Detuned sawtooth duo — classic K-pop lead
+  osc(freq,      'sawtooth', t, BEAT*0.75, 0.13,  +8);
+  osc(freq,      'sawtooth', t, BEAT*0.75, 0.13, -8);
+  osc(freq*2,    'sine',     t, BEAT*0.4,  0.04);   // octave shimmer
+  // Slight pitch bend up for expressiveness
+}
+
+function arp(freq, t){
+  if(!freq) return;
+  osc(freq, 'square', t, S16*2.8, 0.06, 0);
+  osc(freq, 'sine',   t, S16*1.5, 0.04, +12);
+}
+
+function bass(freq, t){
+  if(!freq) return;
+  osc(freq,     'sawtooth', t, BEAT*0.85, 0.28);
+  osc(freq,     'square',   t, BEAT*0.5,  0.10, +3);
+  osc(freq*0.5, 'sine',     t, BEAT*0.9,  0.22);  // sub octave
+}
+
+function pad(rootFreq, t, dur){
+  // Lush chord: root + maj3rd + 5th (minor feel: root + min3rd + 5th)
+  const m3 = rootFreq * 1.1892; // minor third
+  const p5 = rootFreq * 1.4983; // perfect fifth
+  const oct = rootFreq * 2;
+  [rootFreq, m3, p5, oct].forEach(f => {
+    osc(f, 'sine',     t, dur, 0.055);
+    osc(f, 'triangle', t, dur, 0.025, +5);
+  });
+}
+
+// ── Schedule one 16th-note step ──
+function scheduleStep(step, t){
+  const i = step % 32;
+  const beat4 = Math.floor(i / 4); // which quarter-beat (0-7)
+
+  // Drums
+  if(KICK[i])  kick(t);
+  if(SNARE[i]) snare(t);
+  if(CLAP[i])  clap(t + 0.004);
+  if(HAT[i])   hat(t, i%2===0 ? 0.22 : 0.14);
+  if(OHAT[i])  openHat(t);
+
+  // Lead melody (quarter-note grid = every 4 steps)
+  if(i % 2 === 0 && LEAD[i] >= 0)  lead(SCALE[LEAD[i]], t);
+
+  // Arp (every 16th)
+  if(ARP[i] >= 0) arp(SCALE[ARP[i]], t);
+
+  // Bass (8th notes = every 2 steps)
+  if(i % 2 === 0 && BASS_P[i] >= 0) bass(SCALE[BASS_P[i]] * 0.5, t);
+
+  // Pad chords (every 4 beats = 16 steps)
+  if(i % 4 === 0){
+    const padRoot = SCALE[PADS[beat4 % PADS.length]] * 0.5;
+    pad(padRoot, t, BEAT * 3.8);
+  }
+
+  // Riser noise fill before bar 2 (step 28-31)
+  if(i >= 28) noise(t, S16 * 1.5, 0.04 * (i-27), 200 + (i-28)*800, 18000);
+}
+
+// ── Transport ──
+function startMusic(){
+  initAudio();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  if(musicPlaying) return;
+  musicPlaying = true;
+  document.getElementById('play-btn').textContent = '⏸ Pausa';
+  document.getElementById('play-btn').classList.add('active');
+  document.getElementById('music-note').style.animationPlayState = 'running';
+  animateViz(true);
+
+  let nextTime = audioCtx.currentTime + 0.05;
+  currentBeat = 0;
+
+  function tick(){
+    const lookahead = 0.25;
+    while(nextTime < audioCtx.currentTime + lookahead){
+      scheduleStep(currentBeat, nextTime);
+      nextTime += S16;
+      currentBeat++;
+    }
+    if(musicPlaying) beatInterval = setTimeout(tick, 60);
+  }
+  tick();
+}
+
+function stopMusic(){
+  musicPlaying = false;
+  clearTimeout(beatInterval);
+  document.getElementById('play-btn').textContent = '▶ Play';
+  document.getElementById('play-btn').classList.remove('active');
+  document.getElementById('music-note').style.animationPlayState = 'paused';
+  animateViz(false);
+}
+
+function toggleMusic(){
+  initAudio();
+  if(musicPlaying) stopMusic(); else startMusic();
+}
+
+function toggleMute(){
+  if(!masterGain) return;
+  const v = masterGain.gain.value > 0 ? 0 : parseFloat(document.getElementById('vol-slider').value)/100;
+  masterGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
+  document.querySelector('.vol-icon').textContent = v > 0 ? '🔊' : '🔇';
+}
+
+function setVolume(v){
+  if(!masterGain) return;
+  masterGain.gain.setTargetAtTime(v/100, audioCtx.currentTime, 0.05);
+}
+
+function animateViz(on){
+  const viz = document.getElementById('music-viz');
+  viz.innerHTML = '';
+  if(!on) return;
+  for(let i=0;i<12;i++){
+    const b = document.createElement('div');
+    b.className = 'music-bar-el';
+    b.style.animationDelay    = (i * 0.055) + 's';
+    b.style.animationDuration = (0.18 + Math.random() * 0.22) + 's';
+    b.style.width = '3px';
+    viz.appendChild(b);
+  }
+}
+
+// ── MP3 MODE ──
+let mp3Mode = false;   // true when a real MP3 is loaded
+const mp3Songs = {
+  names: ['♦ K-POP BANGER — 138 BPM ♦', '', ''],
+};
+
+function loadMP3(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  // Stop whatever is playing
+  if(musicPlaying) stopMusic();
+  mp3Mode = false;
+
+  const url = URL.createObjectURL(file);
+  const player = document.getElementById('mp3-player');
+  player.src = url;
+
+  // Truncate long file names nicely
+  let name = file.name.replace(/\.[^.]+$/, '');
+  if(name.length > 28) name = name.slice(0, 26) + '…';
+
+  document.getElementById('music-title').textContent = '🎵 ' + name;
+  document.getElementById('music-sub').textContent   = 'Tu canción · BLACKPINK Math Academy';
+  document.getElementById('upload-btn').textContent  = '✅ MP3';
+  document.getElementById('upload-btn').style.borderColor = 'var(--green)';
+  document.getElementById('upload-btn').style.color  = 'var(--green)';
+
+  // Sync volume
+  player.volume = parseFloat(document.getElementById('vol-slider').value) / 100;
+
+  mp3Mode = true;
+  showToast('🎵 Canción cargada: ' + name);
+
+  // Auto-play
+  startMusicMP3();
+}
+
+function startMusicMP3(){
+  const player = document.getElementById('mp3-player');
+  player.play().then(()=>{
+    musicPlaying = true;
+    document.getElementById('play-btn').textContent = '⏸ Pausa';
+    document.getElementById('play-btn').classList.add('active');
+    document.getElementById('music-note').style.animationPlayState = 'running';
+    animateViz(true);
+  }).catch(()=> showToast('⚠️ No se pudo reproducir el archivo'));
+}
+
+function stopMusicMP3(){
+  const player = document.getElementById('mp3-player');
+  player.pause();
+  musicPlaying = false;
+  document.getElementById('play-btn').textContent = '▶ Play';
+  document.getElementById('play-btn').classList.remove('active');
+  document.getElementById('music-note').style.animationPlayState = 'paused';
+  animateViz(false);
+}
+
+// Override toggleMusic to handle both modes
+const _toggleMusicSynth = toggleMusic;
+function toggleMusic(){
+  if(mp3Mode){
+    if(musicPlaying) stopMusicMP3(); else startMusicMP3();
+  } else {
+    // synth path
+    initAudio();
+    if(musicPlaying) stopMusic(); else startMusic();
+  }
+}
+
+// Override setVolume for both modes
+function setVolume(v){
+  if(masterGain) masterGain.gain.setTargetAtTime(v/100, audioCtx ? audioCtx.currentTime : 0, 0.05);
+  const player = document.getElementById('mp3-player');
+  if(player) player.volume = v/100;
+}
+
+// Override toggleMute for both modes
+function toggleMute(){
+  const vol = parseFloat(document.getElementById('vol-slider').value)/100;
+  const icon = document.querySelector('.vol-icon');
+  const player = document.getElementById('mp3-player');
+  if(mp3Mode){
+    player.muted = !player.muted;
+    icon.textContent = player.muted ? '🔇' : '🔊';
+  } else {
+    if(!masterGain) return;
+    const cur = masterGain.gain.value;
+    const next = cur > 0 ? 0 : vol;
+    masterGain.gain.setTargetAtTime(next, audioCtx.currentTime, 0.05);
+    icon.textContent = next > 0 ? '🔊' : '🔇';
+  }
+}
+
+// ════════════════════════════════════════
+//  MEMBER DATA & SVG
+// ════════════════════════════════════════
+const MEMBERS = [
+  {name:"Jennie",role:"Main Rapper",color:"#FF1493",emoji:"🩷",cls:"jennie",
+   ok:["¡Perfecta! 🖤","¡Eso es! 💗","¡Jjang! ✨","¡Amazing! 🔥"],
+   bad:["¡Casi! Inténtalo 💪","¡No te rindas! 🖤","¡Tú puedes! 💗"]},
+  {name:"Jisoo", role:"Main Vocalist",color:"#00BFFF",emoji:"💙",cls:"jisoo",
+   ok:["¡Daebak! 💙","¡Lo lograste! 🌟","¡Brillante! 💫","¡Increíble! 🎵"],
+   bad:["¡Sigue intentando! 💙","¡La próxima! 🌟","¡Casi! 💫"]},
+  {name:"Lisa",  role:"Main Dancer", color:"#FFD700",emoji:"💛",cls:"lisa",
+   ok:["¡Nailed it! 💛","¡On fire! 🔥","¡Queen! 👑","¡Legendaria! ⭐"],
+   bad:["¡Keep going! 💛","¡Don't give up! ⭐","¡Almost! 🌙"]},
+  {name:"Rosé",  role:"Main Vocalist",color:"#FF69B4",emoji:"🌹",cls:"rose",
+   ok:["¡Fantástica! 🌹","¡Adorable y lista! 💕","¡Maravillosa! 🌸","¡Sí! 🎶"],
+   bad:["¡Ánimo! 🌹","¡Lo harás bien! 💕","¡No pares! 🌸"]},
+];
+
+const SVG_BODIES = {
+  jennie:`<rect x="28" y="80" width="44" height="50" rx="8" fill="#1a0010"/><rect x="30" y="78" width="40" height="30" rx="6" fill="#2d0020"/><circle cx="45" cy="88" r="1.5" fill="#FF1493" opacity=".8"/><circle cx="55" cy="92" r="1.2" fill="#FFD700" opacity=".8"/><ellipse cx="22" cy="92" rx="7" ry="16" fill="#f5c5a3" transform="rotate(-10,22,92)"/><ellipse cx="78" cy="90" rx="7" ry="16" fill="#f5c5a3" transform="rotate(10,78,90)"/><rect x="44" y="62" width="12" height="20" rx="4" fill="#f5c5a3"/><ellipse cx="50" cy="52" rx="22" ry="24" fill="#f5c5a3"/><ellipse cx="50" cy="38" rx="22" ry="16" fill="#111"/><rect x="28" y="38" width="8" height="28" rx="4" fill="#111"/><rect x="64" y="38" width="8" height="28" rx="4" fill="#111"/><rect x="30" y="30" width="40" height="20" rx="10" fill="#111"/><ellipse cx="42" cy="52" rx="4.5" ry="3.5" fill="#fff"/><ellipse cx="58" cy="52" rx="4.5" ry="3.5" fill="#fff"/><circle cx="43" cy="52" r="2.5" fill="#2a1000"/><circle cx="59" cy="52" r="2.5" fill="#2a1000"/><circle cx="44" cy="51" r="1" fill="#fff"/><circle cx="60" cy="51" r="1" fill="#fff"/><path d="M38 47 Q42 45 46 47" stroke="#2a1000" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M54 47 Q58 45 62 47" stroke="#2a1000" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="57" rx="2" ry="1.5" fill="#e8b090"/><path d="M44 63 Q50 68 56 63" stroke="#c07060" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="28" cy="55" r="2.5" fill="#FF1493"/><circle cx="72" cy="55" r="2.5" fill="#FF1493"/><ellipse cx="37" cy="60" rx="5" ry="3" fill="#FF9999" opacity=".35"/><ellipse cx="63" cy="60" rx="5" ry="3" fill="#FF9999" opacity=".35"/><path d="M38 32 L40 26 L44 30 L50 24 L56 30 L60 26 L62 32 Z" fill="#FFD700"/><circle cx="50" cy="26" r="2" fill="#FF1493"/>`,
+  jisoo:`<rect x="27" y="80" width="46" height="50" rx="8" fill="#001a3a"/><rect x="29" y="78" width="42" height="32" rx="6" fill="#002860"/><path d="M42 82 L50 87 L58 82 L50 86 Z" fill="#00BFFF" opacity=".8"/><ellipse cx="21" cy="91" rx="6" ry="15" fill="#f0c8a0" transform="rotate(-8,21,91)"/><ellipse cx="79" cy="91" rx="6" ry="15" fill="#f0c8a0" transform="rotate(8,79,91)"/><rect x="44" y="62" width="12" height="20" rx="4" fill="#f0c8a0"/><ellipse cx="50" cy="52" rx="21" ry="23" fill="#f0c8a0"/><ellipse cx="50" cy="36" rx="23" ry="18" fill="#0f0f0f"/><rect x="27" y="36" width="8" height="38" rx="5" fill="#0f0f0f"/><rect x="65" y="36" width="8" height="38" rx="5" fill="#0f0f0f"/><rect x="29" y="28" width="42" height="22" rx="12" fill="#0f0f0f"/><ellipse cx="41.5" cy="51" rx="5" ry="4" fill="#fff"/><ellipse cx="58.5" cy="51" rx="5" ry="4" fill="#fff"/><circle cx="42.5" cy="51" r="3" fill="#1a0800"/><circle cx="59.5" cy="51" r="3" fill="#1a0800"/><circle cx="43.5" cy="50" r="1.2" fill="#fff"/><circle cx="60.5" cy="50" r="1.2" fill="#fff"/><path d="M37 48 Q41 46 46 48" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M53 48 Q57 46 63 48" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M37 46 Q41.5 43 46 46" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M53 46 Q58 43 63 46" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="57" rx="1.8" ry="1.3" fill="#dba078"/><path d="M44 62 Q50 67 56 62" stroke="#c06060" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="29" cy="54" r="2" fill="#00BFFF"/><ellipse cx="29" cy="58" rx="1.5" ry="3" fill="#00BFFF" opacity=".7"/><circle cx="71" cy="54" r="2" fill="#00BFFF"/><ellipse cx="71" cy="58" rx="1.5" ry="3" fill="#00BFFF" opacity=".7"/><ellipse cx="36" cy="59" rx="5" ry="3" fill="#FFB6C1" opacity=".4"/><ellipse cx="64" cy="59" rx="5" ry="3" fill="#FFB6C1" opacity=".4"/><circle cx="63" cy="36" r="5" fill="#00BFFF" opacity=".5"/><circle cx="63" cy="36" r="2.5" fill="#FFD700"/>`,
+  lisa:`<rect x="27" y="80" width="46" height="50" rx="8" fill="#1a1a00"/><rect x="29" y="78" width="42" height="30" rx="6" fill="#2a2600"/><path d="M38 82 Q50 87 62 82" stroke="#FFD700" stroke-width="2" fill="none" opacity=".8"/><ellipse cx="20" cy="92" rx="6" ry="17" fill="#c8a878" transform="rotate(-7,20,92)"/><ellipse cx="80" cy="92" rx="6" ry="17" fill="#c8a878" transform="rotate(7,80,92)"/><rect x="44" y="62" width="12" height="20" rx="4" fill="#c8a878"/><ellipse cx="50" cy="51" rx="21" ry="23" fill="#c8a878"/><rect x="29" y="28" width="42" height="20" rx="12" fill="#E8D060"/><rect x="27" y="38" width="8" height="24" rx="5" fill="#E8D060"/><rect x="65" y="38" width="8" height="24" rx="5" fill="#E8D060"/><ellipse cx="50" cy="36" rx="22" ry="14" fill="#F0DC70"/><path d="M37 51 Q41.5 48 46 51 Q41.5 54 37 51 Z" fill="#fff"/><path d="M54 51 Q58.5 48 63 51 Q58.5 54 54 51 Z" fill="#fff"/><ellipse cx="41.5" cy="51" rx="2.8" ry="2.8" fill="#1a0800"/><ellipse cx="58.5" cy="51" rx="2.8" ry="2.8" fill="#1a0800"/><circle cx="42.5" cy="50" r="1" fill="#fff"/><circle cx="59.5" cy="50" r="1" fill="#fff"/><path d="M36 49 Q41.5 47 47 49" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M53 49 Q58.5 47 64 49" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="37" y="46" width="9" height="1.8" rx="1" fill="#8a6a20"/><rect x="54" y="46" width="9" height="1.8" rx="1" fill="#8a6a20"/><ellipse cx="50" cy="57" rx="1.8" ry="1.3" fill="#b08860"/><path d="M43 62 Q50 67 57 62" stroke="#b05050" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="28.5" cy="55" r="3" stroke="#FFD700" stroke-width="2" fill="none"/><circle cx="71.5" cy="55" r="3" stroke="#FFD700" stroke-width="2" fill="none"/><ellipse cx="36" cy="58" rx="5" ry="3" fill="#E8A080" opacity=".35"/><ellipse cx="64" cy="58" rx="5" ry="3" fill="#E8A080" opacity=".35"/><polygon points="68,30 69.5,34.5 74,34.5 70.5,37.5 71.8,42 68,39.2 64.2,42 65.5,37.5 62,34.5 66.5,34.5" fill="#FFD700"/>`,
+  rose:`<rect x="27" y="80" width="46" height="50" rx="8" fill="#2a0010"/><rect x="29" y="77" width="42" height="32" rx="6" fill="#3d0018"/><path d="M36 78 Q43 74 50 78 Q57 74 64 78 Q57 82 50 79 Q43 82 36 78 Z" fill="#FF69B4" opacity=".5"/><ellipse cx="21" cy="91" rx="6" ry="15" fill="#f5c5a0" transform="rotate(-9,21,91)"/><ellipse cx="79" cy="91" rx="6" ry="15" fill="#f5c5a0" transform="rotate(9,79,91)"/><rect x="44" y="62" width="12" height="20" rx="4" fill="#f5c5a0"/><ellipse cx="50" cy="52" rx="21" ry="23" fill="#f5c5a0"/><rect x="29" y="28" width="42" height="20" rx="12" fill="#5a2800"/><rect x="27" y="36" width="9" height="34" rx="6" fill="#5a2800"/><rect x="64" y="36" width="9" height="34" rx="6" fill="#5a2800"/><ellipse cx="50" cy="36" rx="22" ry="14" fill="#6a3400"/><ellipse cx="41.5" cy="52" rx="5" ry="4.5" fill="#fff"/><ellipse cx="58.5" cy="52" rx="5" ry="4.5" fill="#fff"/><circle cx="42" cy="52" r="3.2" fill="#2a0800"/><circle cx="59" cy="52" r="3.2" fill="#2a0800"/><circle cx="43" cy="51" r="1.3" fill="#fff"/><circle cx="60" cy="51" r="1.3" fill="#fff"/><path d="M36.5 49 Q41.5 47 46.5 49" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M53 49 Q58 47 63.5 49" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M37 47 Q41.5 44.5 46 47" stroke="#4a2800" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M54 47 Q58.5 44.5 63 47" stroke="#4a2800" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="58" rx="1.8" ry="1.3" fill="#dba080"/><path d="M44 63 Q50 68 56 63" stroke="#c06070" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="29" cy="54" r="1.5" fill="#FF69B4"/><circle cx="29" cy="54" r="3" stroke="#FF69B4" stroke-width="1" fill="none" opacity=".5"/><circle cx="71" cy="54" r="1.5" fill="#FF69B4"/><circle cx="71" cy="54" r="3" stroke="#FF69B4" stroke-width="1" fill="none" opacity=".5"/><ellipse cx="36" cy="60" rx="6" ry="3.5" fill="#FF9999" opacity=".4"/><ellipse cx="64" cy="60" rx="6" ry="3.5" fill="#FF9999" opacity=".4"/><circle cx="65" cy="32" r="5" fill="#FF69B4" opacity=".6"/><circle cx="65" cy="32" r="3" fill="#FF1493" opacity=".8"/><circle cx="65" cy="32" r="1.5" fill="#FFD700"/>`
+};
+
+// ════════════════════════════════════════
+//  PROBLEM BANK (60+ problems, many tables)
+// ════════════════════════════════════════
+function makeProblems(table){
+  const t = table;
+  const bank = [
+    // K-POP / BLACKPINK
+    {cat:"🎤 K-pop",cat_color:"#FF1493",illus:"🎤",
+     text:`Jennie graba <strong>${t} canciones</strong> cada semana. ¿Cuántas canciones grabará en <strong>4 semanas</strong>?`,
+     question:`¿Cuántas canciones en total?`,
+     a:t,b:4,
+     hint:[`Multiplicamos: ${t} canciones × 4 semanas`,`= ${t} + ${t} + ${t} + ${t}`,`= <strong>${t*4}</strong> canciones`],
+     explain:`Jennie graba ${t} canciones cada semana, y hay 4 semanas, entonces: ${t} × 4 = <strong>${t*4} canciones</strong>.`},
+    {cat:"💿 Discos",cat_color:"#FF1493",illus:"💿",
+     text:`BLACKPINK tiene <strong>${t} álbumes</strong>. Cada álbum tiene <strong>5 canciones</strong>. ¿Cuántas canciones tienen en total?`,
+     question:`¿Cuántas canciones en total?`,
+     a:t,b:5,
+     hint:[`Multiplicamos: ${t} álbumes × 5 canciones`,`= 5 sumado ${t} veces`,`= <strong>${t*5}</strong> canciones`],
+     explain:`${t} álbumes × 5 canciones cada uno = <strong>${t*5} canciones</strong> en total.`},
+    {cat:"🎵 Conciertos",cat_color:"#FF4DA6",illus:"🎵",
+     text:`En un concierto de BLACKPINK hay <strong>${t} filas</strong> y en cada fila caben <strong>8 fans</strong>. ¿Cuántos fans hay?`,
+     question:`¿Cuántos fans en total?`,
+     a:t,b:8,
+     hint:[`Multiplicamos: ${t} filas × 8 fans por fila`,`Cada fila tiene 8 personas`,`= <strong>${t*8}</strong> fans`],
+     explain:`${t} filas × 8 fans = <strong>${t*8} fans</strong> en el concierto.`},
+    // COMIDA
+    {cat:"🍕 Comida",cat_color:"#FF6B35",illus:"🍕",
+     text:`En una pizzería preparan <strong>${t} pizzas</strong>. Cada pizza tiene <strong>6 trozos</strong>. ¿Cuántos trozos hay en total?`,
+     question:`¿Cuántos trozos de pizza hay?`,
+     a:t,b:6,
+     hint:[`Multiplicamos: ${t} pizzas × 6 trozos`,`Sumamos 6 un total de ${t} veces`,`= <strong>${t*6}</strong> trozos`],
+     explain:`${t} pizzas × 6 trozos = <strong>${t*6} trozos</strong> de pizza.`},
+    {cat:"🍎 Frutas",cat_color:"#FF6B35",illus:"🍎",
+     text:`La mamá de Lisa compra <strong>${t} bolsas de manzanas</strong>. Cada bolsa tiene <strong>7 manzanas</strong>. ¿Cuántas manzanas compró?`,
+     question:`¿Cuántas manzanas en total?`,
+     a:t,b:7,
+     hint:[`Multiplicamos: ${t} bolsas × 7 manzanas`,`7 manzanas, repetido ${t} veces`,`= <strong>${t*7}</strong> manzanas`],
+     explain:`${t} bolsas × 7 manzanas por bolsa = <strong>${t*7} manzanas</strong>.`},
+    {cat:"🥚 Huevos",cat_color:"#FF6B35",illus:"🥚",
+     text:`En el supermercado hay <strong>${t} cajas de huevos</strong>. Cada caja tiene <strong>12 huevos</strong>. ¿Cuántos huevos hay en total?`,
+     question:`¿Cuántos huevos hay en total?`,
+     a:t,b:12,
+     hint:[`Multiplicamos: ${t} cajas × 12 huevos`,`12 huevos por caja, ${t} cajas`,`= <strong>${t*12}</strong> huevos`],
+     explain:`${t} cajas × 12 huevos = <strong>${t*12} huevos</strong> en total.`},
+    {cat:"🍰 Tortas",cat_color:"#FF69B4",illus:"🍰",
+     text:`Rosé hornea <strong>${t} tortas</strong> para el cumpleaños de sus fans. Cada torta tiene <strong>9 velas</strong>. ¿Cuántas velas necesita?`,
+     question:`¿Cuántas velas en total?`,
+     a:t,b:9,
+     hint:[`Multiplicamos: ${t} tortas × 9 velas`,`9 velas por torta`,`= <strong>${t*9}</strong> velas`],
+     explain:`${t} tortas × 9 velas = <strong>${t*9} velas</strong>.`},
+    // ANIMALES
+    {cat:"🐾 Animales",cat_color:"#9C27B0",illus:"🐶",
+     text:`Jisoo tiene <strong>${t} perritos</strong>. Cada perrito tiene <strong>4 patas</strong>. ¿Cuántas patas hay en total?`,
+     question:`¿Cuántas patas en total?`,
+     a:t,b:4,
+     hint:[`Multiplicamos: ${t} perritos × 4 patas`,`4 patas por perrito`,`= <strong>${t*4}</strong> patas`],
+     explain:`${t} perritos × 4 patas = <strong>${t*4} patas</strong> en total.`},
+    {cat:"🦋 Naturaleza",cat_color:"#4CAF50",illus:"🦋",
+     text:`En un jardín hay <strong>${t} flores</strong>. Cada flor tiene <strong>5 pétalos</strong>. ¿Cuántos pétalos hay en total?`,
+     question:`¿Cuántos pétalos hay?`,
+     a:t,b:5,
+     hint:[`Multiplicamos: ${t} flores × 5 pétalos`,`5 pétalos por flor`,`= <strong>${t*5}</strong> pétalos`],
+     explain:`${t} flores × 5 pétalos = <strong>${t*5} pétalos</strong>.`},
+    {cat:"🐟 Peces",cat_color:"#00BCD4",illus:"🐠",
+     text:`En una pecera hay <strong>${t} peces</strong>. Lisa les da <strong>3 pellets de alimento</strong> a cada pez. ¿Cuántos pellets necesita?`,
+     question:`¿Cuántos pellets en total?`,
+     a:t,b:3,
+     hint:[`Multiplicamos: ${t} peces × 3 pellets`,`3 pellets por pez`,`= <strong>${t*3}</strong> pellets`],
+     explain:`${t} peces × 3 pellets = <strong>${t*3} pellets</strong> de alimento.`},
+    // ESCUELA
+    {cat:"📚 Escuela",cat_color:"#2196F3",illus:"📚",
+     text:`En una sala de clases hay <strong>${t} filas</strong> de pupitres. Cada fila tiene <strong>6 pupitres</strong>. ¿Cuántos pupitres hay?`,
+     question:`¿Cuántos pupitres en total?`,
+     a:t,b:6,
+     hint:[`Multiplicamos: ${t} filas × 6 pupitres`,`6 pupitres por fila`,`= <strong>${t*6}</strong> pupitres`],
+     explain:`${t} filas × 6 pupitres = <strong>${t*6} pupitres</strong> en la sala.`},
+    {cat:"✏️ Materiales",cat_color:"#FF9800",illus:"✏️",
+     text:`Cada estudiante necesita <strong>${t} lápices de colores</strong>. Si hay <strong>10 estudiantes</strong> en el grupo. ¿Cuántos lápices se necesitan?`,
+     question:`¿Cuántos lápices en total?`,
+     a:t,b:10,
+     hint:[`Multiplicamos: ${t} lápices × 10 estudiantes`,`${t} lápices por persona`,`= <strong>${t*10}</strong> lápices`],
+     explain:`${t} lápices × 10 estudiantes = <strong>${t*10} lápices</strong> en total.`},
+    // DEPORTE
+    {cat:"⚽ Deporte",cat_color:"#4CAF50",illus:"⚽",
+     text:`En un torneo de fútbol participan <strong>${t} equipos</strong>. Cada equipo tiene <strong>11 jugadores</strong>. ¿Cuántos jugadores hay en total?`,
+     question:`¿Cuántos jugadores en total?`,
+     a:t,b:11,
+     hint:[`Multiplicamos: ${t} equipos × 11 jugadores`,`11 jugadores por equipo`,`= <strong>${t*11}</strong> jugadores`],
+     explain:`${t} equipos × 11 jugadores = <strong>${t*11} jugadores</strong> en el torneo.`},
+    {cat:"🏀 Basket",cat_color:"#FF5722",illus:"🏀",
+     text:`Una canasta de básquetbol vale <strong>${t} puntos</strong>. Si el equipo metió <strong>8 canastas</strong>. ¿Cuántos puntos hizo?`,
+     question:`¿Cuántos puntos en total?`,
+     a:t,b:8,
+     hint:[`Multiplicamos: ${t} puntos × 8 canastas`,`${t} puntos por canasta`,`= <strong>${t*8}</strong> puntos`],
+     explain:`${t} puntos × 8 canastas = <strong>${t*8} puntos</strong>.`},
+    // DINERO
+    {cat:"💰 Dinero",cat_color:"#FFD700",illus:"💰",
+     text:`Una bebida cuesta <strong>${t} pesos</strong>. Jennie quiere comprar <strong>9 bebidas</strong> para sus amigas. ¿Cuánto dinero necesita?`,
+     question:`¿Cuánto dinero necesita?`,
+     a:t,b:9,
+     hint:[`Multiplicamos: $${t} × 9 bebidas`,`Cada bebida vale $${t}`,`= <strong>$${t*9}</strong>`],
+     explain:`$${t} × 9 bebidas = <strong>$${t*9}</strong> en total.`},
+    {cat:"🛍️ Compras",cat_color:"#E91E63",illus:"🛍️",
+     text:`Lisa va al mall y compra <strong>${t} accesorios</strong>. Cada accesorio cuesta <strong>$7</strong>. ¿Cuánto gastó en total?`,
+     question:`¿Cuánto gastó Lisa?`,
+     a:7,b:t,
+     hint:[`Multiplicamos: $7 × ${t} accesorios`,`7 pesos por accesorio`,`= <strong>$${7*t}</strong>`],
+     explain:`$7 × ${t} accesorios = <strong>$${7*t}</strong> gastados.`},
+  ];
+  // shuffle and pick 6
+  return shuffle([...bank]).slice(0,6);
+}
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let selMember=0, selTable=3, gameMode='learn';
+let questions=[], qIdx=0, pts=0, okCount=0, badCount=0, streak=0, maxStreak=0, answered=false;
+const TOTAL=12;
+
+let problemSet=[], probIdx=0, probPts=0, probOk=0, probBad=0, probAnswered=false;
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+(function init(){
+  buildMemberCards();
+  buildTableGrid();
+  buildParticles();
+})();
+
+function buildMemberCards(){
+  const g=document.getElementById('members-grid');
+  g.innerHTML='';
+  MEMBERS.forEach((m,i)=>{
+    const d=document.createElement('div');
+    d.className=`member-card ${m.cls}${i===0?' selected':''}`;
+    d.onclick=()=>selectMember(i);
+    d.innerHTML=`<span class="selected-crown">👑</span>
+      <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">${SVG_BODIES[m.cls]}</svg>
+      <div class="member-name" style="color:${m.color}">${m.name}</div>
+      <div class="member-role">${m.role}</div>`;
+    g.appendChild(d);
+  });
+}
+function buildTableGrid(){
+  const g=document.getElementById('tbl-grid');g.innerHTML='';
+  for(let i=1;i<=12;i++){
+    const b=document.createElement('button');
+    b.className='t-btn'+(i===selTable?' active':'');
+    b.textContent=i;
+    b.onclick=()=>{selTable=i;g.querySelectorAll('.t-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');};
+    g.appendChild(b);
+  }
+}
+function buildParticles(){
+  const c=document.getElementById('particles');
+  const colors=['#FF007F','#FF4DA6','#FFD700','#FF69B4','#00BFFF'];
+  for(let i=0;i<25;i++){
+    const d=document.createElement('div');d.className='p';
+    const sz=3+Math.random()*6;
+    d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${14+Math.random()*18}s;animation-delay:${-Math.random()*20}s;`;
+    c.appendChild(d);
+  }
+}
+function selectMember(i){
+  selMember=i;
+  document.querySelectorAll('.member-card').forEach((c,idx)=>c.classList.toggle('selected',idx===i));
+}
+function setTab(t){
+  gameMode=t;
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.getElementById('table-selector-wrap').style.display=t==='problems'?'none':'block';
+}
+
+// ── SCREENS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='none';});
+  const el=document.getElementById(id);
+  el.style.display='block';
+  requestAnimationFrame(()=>el.classList.add('active'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goSplash(){showScreen('s-splash');}
+function goLearn(){showLearn();}
+function goProblems(){startProblems();}
+
+// ── START FLOW ──
+function startFlow(){
+  if(gameMode==='learn') showLearn();
+  else if(gameMode==='problems') startProblems();
+  else { initGame(); showScreen('s-game'); }
+}
+
+// ── LEARN ──
+function showLearn(){
+  const m=MEMBERS[selMember];
+  const lc=document.getElementById('learn-char');
+  lc.innerHTML=SVG_BODIES[m.cls];
+  document.getElementById('learn-title').textContent=`Tabla del ${selTable}`;
+  document.getElementById('learn-sub').textContent=`¡${m.name} te enseña! Lee y memoriza 🧠`;
+  const tf=document.getElementById('table-full');tf.innerHTML='';
+  for(let i=1;i<=12;i++){
+    const row=document.createElement('div');row.className='table-row';
+    row.style.animationDelay=(i*.06)+'s';
+    row.innerHTML=`<span>${selTable} × ${i}</span><span style="color:rgba(255,255,255,.4);font-size:.8rem">= <span class="eq">${selTable*i}</span></span>`;
+    tf.appendChild(row);
+  }
+  showScreen('s-learn');
+}
+function goToGame(){
+  if(gameMode==='learn') gameMode='quiz';
+  initGame();showScreen('s-game');
+}
+
+// ── GAME ──
+function initGame(){
+  questions=[];
+  for(let i=1;i<=12;i++) questions.push({a:selTable,b:i,ans:selTable*i});
+  questions=shuffle(questions);
+  qIdx=0;pts=0;okCount=0;badCount=0;streak=0;maxStreak=0;answered=false;
+  updateHUD();
+  document.getElementById('arena-char').innerHTML=SVG_BODIES[MEMBERS[selMember].cls];
+  nextQ();
+}
+function nextQ(){
+  if(qIdx>=TOTAL){endGame();return;}
+  answered=false;
+  const q=questions[qIdx];const m=MEMBERS[selMember];
+  document.getElementById('combo').classList.remove('show');
+  document.getElementById('feedback').className='feedback';document.getElementById('feedback').textContent='';
+  const qt=document.getElementById('q-text');
+  qt.style.opacity='0';qt.style.transform='scale(.7)';
+  qt.textContent=`${q.a} × ${q.b} =`;
+  setTimeout(()=>{qt.style.transition='all .3s';qt.style.opacity='1';qt.style.transform='scale(1)';},50);
+  const mt=document.getElementById('q-member');
+  mt.style.background=m.color+'22';mt.style.border=`1px solid ${m.color}88`;mt.style.color=m.color;
+  mt.textContent=`${m.emoji} ${m.name} pregunta`;
+  document.getElementById('q-hint').textContent='¿Cuánto es el resultado?';
+  document.getElementById('prog-bar').style.width=(qIdx/TOTAL*100)+'%';
+  if(gameMode==='fill') setupFill(q); else setupQuiz(q);
+}
+function setupFill(q){
+  document.getElementById('fill-mode').style.display='block';
+  document.getElementById('quiz-mode').style.display='none';
+  document.getElementById('q-text').style.display='none';
+  const inp=document.getElementById('fill-input');
+  inp.value='';inp.className='fill-input';inp.disabled=false;
+  document.getElementById('fill-eq').textContent=`${q.a} × ${q.b} =`;
+  document.getElementById('btn-check').disabled=false;
+  setTimeout(()=>inp.focus(),100);
+  inp.onkeydown=e=>{if(e.key==='Enter')checkFill();};
+}
+function setupQuiz(q){
+  document.getElementById('fill-mode').style.display='none';
+  document.getElementById('quiz-mode').style.display='block';
+  document.getElementById('q-text').style.display='block';
+  document.getElementById('hint-box').className='hint-box';
+  document.getElementById('hint-btn').disabled=false;
+  const opts=getOptions(q.ans);
+  const g=document.getElementById('opts-grid');g.innerHTML='';
+  opts.forEach(v=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=v;
+    b.onclick=()=>checkQuiz(v,q.ans);g.appendChild(b);
+  });
+}
+function checkFill(){
+  if(answered)return;
+  const q=questions[qIdx];const inp=document.getElementById('fill-input');
+  const val=parseInt(inp.value);
+  if(isNaN(val)){showToast('⚠️ Escribe un número');return;}
+  answered=true;inp.disabled=true;document.getElementById('btn-check').disabled=true;
+  if(val===q.ans){inp.className='fill-input ok';handleCorrect();}
+  else{
+    inp.className='fill-input bad';
+    document.getElementById('feedback').innerHTML=`❌ Era <strong style="color:var(--green)">${q.ans}</strong> — ${selTable} × ${q.b} = ${q.ans}`;
+    document.getElementById('feedback').className='feedback bad';
+    handleWrong();
+  }
+  setTimeout(()=>{qIdx++;updateHUD();nextQ();},1800);
+}
+function checkQuiz(chosen,correct){
+  if(answered)return;answered=true;
+  document.getElementById('hint-btn').disabled=true;
+  document.querySelectorAll('.opt').forEach(b=>{
+    b.disabled=true;const v=parseInt(b.textContent);
+    if(v===correct)b.classList.add('correct');
+    else if(v===chosen&&chosen!==correct)b.classList.add('wrong');
+  });
+  if(chosen===correct){handleCorrect();}
+  else{
+    document.getElementById('feedback').className='feedback bad';
+    document.getElementById('feedback').textContent=`❌ Era ${correct}  •  ${MEMBERS[selMember].bad[Math.floor(Math.random()*3)]}`;
+    handleWrong();
+  }
+  setTimeout(()=>{qIdx++;updateHUD();nextQ();},1600);
+}
+function handleCorrect(){
+  streak++;maxStreak=Math.max(maxStreak,streak);okCount++;
+  const bonus=streak>=3?streak*5:0;pts+=10+bonus;
+  const m=MEMBERS[selMember];
+  const q=m.ok[Math.floor(Math.random()*m.ok.length)];
+  document.getElementById('feedback').className='feedback ok';
+  document.getElementById('feedback').innerHTML=`✅ ${q}${bonus?` <span style="font-size:.75rem;opacity:.7">+${bonus}!</span>`:''}`;
+  if(streak>=2){document.getElementById('combo-n').textContent=streak;document.getElementById('combo').classList.add('show');}
+  burst(m.color);
+}
+function handleWrong(){streak=0;badCount++;}
+function showHint(){
+  const q=questions[qIdx];
+  const box=document.getElementById('hint-box');
+  box.innerHTML=`💡 <strong>${q.a} × ${q.b}</strong> = sumar ${q.a} un total de ${q.b} veces = <strong style="color:var(--gold)">${q.ans}</strong>`;
+  box.className='hint-box show';document.getElementById('hint-btn').disabled=true;
+}
+function updateHUD(){
+  document.getElementById('h-pts').textContent=pts;
+  document.getElementById('h-ok').textContent=okCount;
+  document.getElementById('h-bad').textContent=badCount;
+  document.getElementById('h-str').textContent=streak;
+  document.getElementById('h-left').textContent=Math.max(0,TOTAL-qIdx);
+}
+function endGame(){
+  document.getElementById('prog-bar').style.width='100%';
+  const pct=okCount/TOTAL;
+  let rank,stars,msg;
+  if(pct===1){rank='¡PERFECTA!';stars='⭐⭐⭐';msg='¡Todas correctas! Eres una crack 👑';}
+  else if(pct>=.8){rank='¡AMAZING!';stars='⭐⭐⭐';msg='¡Casi perfecta! Estás dominando 💖';}
+  else if(pct>=.6){rank='¡GREAT JOB!';stars='⭐⭐';msg='¡Muy bien! Un poco más de práctica 💪';}
+  else if(pct>=.4){rank='¡KEEP GOING!';stars='⭐';msg='¡Las BLACKPINK nunca se rinden! 🖤';}
+  else{rank='¡PRACTICA MÁS!';stars='';msg='Lee la tabla primero y luego intenta de nuevo 🌸';}
+  document.getElementById('res-char').innerHTML=SVG_BODIES[MEMBERS[selMember].cls];
+  document.getElementById('res-rank').textContent=rank;
+  document.getElementById('res-stars').textContent=stars;
+  document.getElementById('res-msg').textContent=msg;
+  document.getElementById('res-score').textContent=pts+' pts';
+  document.getElementById('rs-ok').textContent=okCount;
+  document.getElementById('rs-bad').textContent=badCount;
+  document.getElementById('rs-str').textContent=maxStreak;
+  document.getElementById('rs-pts').textContent=pts;
+  showScreen('s-results');
+  for(let i=0;i<10;i++) setTimeout(()=>burst(MEMBERS[selMember].color),i*120);
+}
+function replayGame(){initGame();showScreen('s-game');}
+
+// ════════════════════════════════════════
+//  PROBLEMS ENGINE
+// ════════════════════════════════════════
+function startProblems(){
+  // pick table based on selection, or random if in problem mode
+  problemSet = makeProblems(selTable);
+  probIdx=0;probPts=0;probOk=0;probBad=0;probAnswered=false;
+  const m=MEMBERS[selMember];
+  document.getElementById('prob-char').innerHTML=SVG_BODIES[m.cls];
+  document.getElementById('prob-header-sub').textContent=`¡${m.name} te ayuda a resolver! 🧠`;
+  updateProbHUD();
+  showScreen('s-problems');
+  loadProblem();
+}
+function loadProblem(){
+  if(probIdx>=problemSet.length){endProblems();return;}
+  probAnswered=false;
+  const p=problemSet[probIdx];
+  document.getElementById('prob-counter').textContent=`Problema ${probIdx+1} de ${problemSet.length}`;
+  document.getElementById('prob-prog').style.width=(probIdx/problemSet.length*100)+'%';
+  // category badge
+  const cat=document.getElementById('prob-cat');
+  cat.textContent=p.cat;
+  cat.style.background=p.cat_color+'22';
+  cat.style.border=`1px solid ${p.cat_color}66`;
+  cat.style.color=p.cat_color;
+  // illustration
+  document.getElementById('prob-illus').textContent=p.illus;
+  // text
+  document.getElementById('prob-text').innerHTML=p.text;
+  document.getElementById('prob-question').textContent=p.question;
+  // reset hint
+  document.getElementById('prob-step-hint').className='prob-step-hint';
+  document.getElementById('prob-hint-btn').disabled=false;
+  // reset explanation
+  document.getElementById('prob-explanation').className='prob-explanation';
+  // reset feedback
+  document.getElementById('prob-feedback').className='prob-feedback';
+  document.getElementById('prob-feedback').textContent='';
+  // hide next btn
+  document.getElementById('prob-next-btn').style.display='none';
+  // build options
+  const correct = p.a * p.b;
+  const opts = getProbOptions(correct, p.a, p.b);
+  const g=document.getElementById('prob-opts');g.innerHTML='';
+  opts.forEach(v=>{
+    const b=document.createElement('button');b.className='prob-opt';
+    b.innerHTML=`<strong>${v}</strong>`;
+    b.onclick=()=>checkProb(v,correct,p);
+    g.appendChild(b);
+  });
+}
+function showProbHint(){
+  const p=problemSet[probIdx];
+  const box=document.getElementById('prob-step-hint');
+  box.innerHTML=p.hint.map(s=>`<div class="step">👉 ${s}</div>`).join('');
+  box.className='prob-step-hint show';
+  document.getElementById('prob-hint-btn').disabled=true;
+}
+function checkProb(chosen,correct,p){
+  if(probAnswered)return;probAnswered=true;
+  document.querySelectorAll('.prob-opt').forEach(b=>{
+    b.disabled=true;
+    const v=parseInt(b.textContent);
+    if(v===correct)b.classList.add('correct');
+    else if(v===chosen&&chosen!==correct)b.classList.add('wrong');
+  });
+  const fb=document.getElementById('prob-feedback');
+  const expl=document.getElementById('prob-explanation');
+  if(chosen===correct){
+    probOk++;probPts+=15;
+    const m=MEMBERS[selMember];
+    fb.className='prob-feedback ok';
+    fb.textContent=`✅ ¡Correcto! ${m.ok[Math.floor(Math.random()*m.ok.length)]}`;
+    burst(m.color);
+  } else {
+    probBad++;
+    fb.className='prob-feedback bad';
+    fb.innerHTML=`❌ No es correcto. La respuesta era <strong style="color:var(--green)">${correct}</strong>`;
+  }
+  // show explanation always
+  expl.innerHTML=`📖 <strong>Explicación:</strong> ${p.explain}`;
+  expl.className='prob-explanation show';
+  updateProbHUD();
+  document.getElementById('prob-next-btn').style.display='inline-flex';
+  document.getElementById('prob-next-btn').textContent = probIdx>=problemSet.length-1 ? '🏆 Ver resultados' : '➡ Siguiente problema';
+}
+function nextProblem(){
+  probIdx++;
+  if(probIdx>=problemSet.length){endProblems();}
+  else{loadProblem();}
+}
+function updateProbHUD(){
+  document.getElementById('pb-pts').textContent=probPts;
+  document.getElementById('pb-ok').textContent=probOk;
+  document.getElementById('pb-bad').textContent=probBad;
+}
+function endProblems(){
+  document.getElementById('prob-prog').style.width='100%';
+  const total=problemSet.length;
+  const pct=probOk/total;
+  let rank,stars,msg;
+  if(pct===1){rank='¡MATEMÁTICA TOTAL!';stars='⭐⭐⭐';msg='¡Todos los problemas correctos! Eres increíble 🧠👑';}
+  else if(pct>=.8){rank='¡RESOLVEDORA!';stars='⭐⭐⭐';msg='¡Excelente! Casi todos correctos 💖';}
+  else if(pct>=.6){rank='¡BIEN HECHO!';stars='⭐⭐';msg='¡Muy bien! Sigue practicando con la tabla 💪';}
+  else if(pct>=.4){rank='¡SIGUE ASÍ!';stars='⭐';msg='¡Repasa la tabla y vuelve a intentarlo! 🌸';}
+  else{rank='¡PRACTICA MÁS!';stars='';msg='Lee la tabla completa primero y luego resuelve los problemas 📖';}
+  document.getElementById('pres-char').innerHTML=SVG_BODIES[MEMBERS[selMember].cls];
+  document.getElementById('pres-rank').textContent=rank;
+  document.getElementById('pres-stars').textContent=stars;
+  document.getElementById('pres-msg').textContent=msg;
+  document.getElementById('pres-score').textContent=probPts+' pts';
+  document.getElementById('prs-ok').textContent=probOk;
+  document.getElementById('prs-bad').textContent=probBad;
+  document.getElementById('prs-pts').textContent=probPts;
+  showScreen('s-prob-results');
+  for(let i=0;i<10;i++) setTimeout(()=>burst(MEMBERS[selMember].color),i*130);
+}
+function restartProblems(){
+  // regenerate with different problems
+  startProblems();
+}
+
+// ════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function getOptions(correct){
+  const s=new Set([correct]);
+  [correct-1,correct+1,correct-selTable,correct+selTable,correct-2,correct+2].forEach(v=>{if(v>0&&v!==correct&&s.size<4)s.add(v);});
+  while(s.size<4){const v=correct+Math.floor(Math.random()*20)-10;if(v>0)s.add(v);}
+  return shuffle([...s]);
+}
+function getProbOptions(correct,a,b){
+  const s=new Set([correct]);
+  const near=[a*(b+1),a*(b-1),(a+1)*b,(a-1)*b,correct+a,correct-a,correct+5,correct-5];
+  near.forEach(v=>{if(v>0&&v!==correct&&s.size<4)s.add(v);});
+  while(s.size<4){const v=correct+Math.floor(Math.random()*20)-10;if(v>0&&v!==correct)s.add(v);}
+  return shuffle([...s]);
+}
+function burst(color){
+  for(let i=0;i<6;i++){
+    const d=document.createElement('div');
+    const emojis=['🌸','💖','⭐','✨','💗','🎵','♦','🎊'];
+    d.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    const x=25+Math.random()*50,y=20+Math.random()*40;
+    const dx=(Math.random()-.5)*120,dy=(Math.random()-.5)*120;
+    d.style.cssText=`position:fixed;left:${x}%;top:${y}%;font-size:${1.2+Math.random()*.8}rem;
+      pointer-events:none;z-index:9999;animation:bst .8s ease-out forwards;`;
+    const st=document.createElement('style');
+    st.textContent=`@keyframes bst{0%{transform:translate(0,0)scale(1);opacity:1}100%{transform:translate(${dx}px,${dy}px)scale(0);opacity:0}}`;
+    document.head.appendChild(st);document.body.appendChild(d);
+    setTimeout(()=>{d.remove();st.remove();},850);
+  }
+}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
